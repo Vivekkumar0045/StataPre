@@ -3,7 +3,7 @@
 ## Steps to Create Storage Bucket
 
 1. **Go to Supabase Dashboard**
-   - Visit: https://supabase.com/dashboard
+   - Visit: <https://supabase.com/dashboard>
    - Select your project: `fmvpeaqtwgjsyktnjpfa`
 
 2. **Navigate to Storage**
@@ -94,7 +94,7 @@ When you click "🔗 Share Form" in the app:
 3. Public URL is generated automatically
 4. You can share this URL via email, WhatsApp, SMS, etc.
 5. Anyone with the link can fill the survey
-6. Responses are submitted to your API at https://vivek45537-kartavya.hf.space
+6. Responses are submitted to your API at <https://vivek45537-kartavya.hf.space>
 
 ## Benefits
 

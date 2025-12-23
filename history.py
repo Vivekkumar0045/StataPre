@@ -907,8 +907,9 @@ def render_data_quality(t):
             return
 
         st.markdown("---")
-        st.subheader("Data Overview & Preprocessing")
+        st.subheader("📊 Data Overview")
 
+        # Clean data
         df_clean = results_df.copy()
         for col in df_clean.columns:
             if pd.api.types.is_numeric_dtype(df_clean[col]):
@@ -916,50 +917,141 @@ def render_data_quality(t):
             else:
                 df_clean[col].fillna('Not Specified', inplace=True)
 
-        st.dataframe(df_clean)
+        # Show basic stats
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Total Responses", len(df_clean))
+        col2.metric("Total Questions", len(df_clean.columns) - 5)  # Exclude metadata columns
+        col3.metric("Completion Rate", "100%")
+
+        st.dataframe(df_clean.head(10), use_container_width=True)
 
         st.markdown("---")
-        st.subheader("AI-Powered Summary")
-        if st.button("Generate Summary"):
-            with st.spinner("Generating insights with Ollama..."):
+        st.subheader("🤖 AI-Powered Visualizations")
+        
+        if st.button("🎨 Generate Smart Visualizations", use_container_width=True):
+            with st.spinner("Analyzing data with Gemini AI..."):
                 try:
-                    with st.spinner("Step 1/2: Identifying key columns for summary..."):
-                        all_columns = ", ".join(df_clean.columns)
-                        prompt1 = f"From this list of survey columns, identify the 4 most insightful for a summary. Respond with only a comma-separated list of column names. Columns: {all_columns}"
-                        payload1 = {"model": "gemma3n", "prompt": prompt1, "stream": False}
-                        response1 = requests.post("http://localhost:11434/api/generate", json=payload1, timeout=60)
-                        response1.raise_for_status()
-                        key_columns_str = response1.json().get("response", "").strip()
-                        key_columns = [col.strip() for col in key_columns_str.split(',') if col.strip() in df_clean.columns]
+                    # Prepare data summary for LLM
+                    columns_info = []
+                    for col in df_clean.columns:
+                        if col not in ['id', 'survey_id', 'created_at', 'start_time', 'end_time']:
+                            dtype = 'numeric' if pd.api.types.is_numeric_dtype(df_clean[col]) else 'categorical'
+                            unique_count = df_clean[col].nunique()
+                            columns_info.append({
+                                'name': col,
+                                'type': dtype,
+                                'unique_values': unique_count,
+                                'sample': str(df_clean[col].head(3).tolist())
+                            })
+                    
+                    # Ask Gemini to suggest visualizations
+                    prompt = f"""Analyze this survey data and suggest visualizations. Return ONLY a valid JSON object with this exact structure:
+{{
+  "visualizations": [
+    {{"type": "pie", "column": "column_name", "title": "Chart Title"}},
+    {{"type": "bar", "column": "column_name", "title": "Chart Title"}},
+    {{"type": "line", "x_column": "column_name", "y_column": "column_name", "title": "Chart Title"}},
+    {{"type": "table", "columns": ["col1", "col2"], "title": "Table Title"}}
+  ]
+}}
 
-                    with st.spinner("Step 2/2: Generating summary from key data..."):
-                        if not key_columns:
-                            key_columns = df_clean.columns[:5].tolist()
-                        data_sample = df_clean[key_columns].head(20).to_string()
-                        prompt2 = f"Analyze the following key data from a survey and provide a brief, high-level summary of the findings:\n\n{data_sample}"
-                        payload2 = {"model": "gemma3n", "prompt": prompt2, "stream": False}
-                        response2 = requests.post("http://localhost:11434/api/generate", json=payload2, timeout=120)
-                        response2.raise_for_status()
-                        summary = response2.json().get("response", "Could not generate summary.")
-                        st.success(summary)
+Rules:
+- pie: for categorical data with 2-10 unique values
+- bar: for categorical data with counts
+- line: for numeric trends over time or sequences
+- table: for detailed data comparison
+- Maximum 4 visualizations
+- Use actual column names from the data
+
+Data columns:
+{json.dumps(columns_info, indent=2)}
+
+Return only the JSON, no markdown, no explanation."""
+
+                    response = model.generate_content(prompt)
+                    response_text = response.text.strip()
+                    
+                    # Extract JSON from response
+                    if '```json' in response_text:
+                        response_text = response_text.split('```json')[1].split('```')[0].strip()
+                    elif '```' in response_text:
+                        response_text = response_text.split('```')[1].split('```')[0].strip()
+                    
+                    viz_config = json.loads(response_text)
+                    
+                    # Generate visualizations
+                    st.success("✅ Analysis complete! Generating visualizations...")
+                    
+                    for idx, viz in enumerate(viz_config.get('visualizations', [])):
+                        viz_type = viz.get('type')
+                        title = viz.get('title', 'Visualization')
+                        
+                        st.markdown(f"### {idx + 1}. {title}")
+                        
+                        if viz_type == 'pie':
+                            col = viz.get('column')
+                            if col in df_clean.columns:
+                                value_counts = df_clean[col].value_counts()
+                                fig = px.pie(
+                                    values=value_counts.values,
+                                    names=value_counts.index,
+                                    title=title,
+                                    hole=0.3
+                                )
+                                fig.update_traces(textposition='inside', textinfo='percent+label')
+                                st.plotly_chart(fig, use_container_width=True)
+                        
+                        elif viz_type == 'bar':
+                            col = viz.get('column')
+                            if col in df_clean.columns:
+                                value_counts = df_clean[col].value_counts()
+                                fig = px.bar(
+                                    x=value_counts.index,
+                                    y=value_counts.values,
+                                    title=title,
+                                    labels={'x': col, 'y': 'Count'}
+                                )
+                                fig.update_layout(showlegend=False)
+                                st.plotly_chart(fig, use_container_width=True)
+                        
+                        elif viz_type == 'line':
+                            x_col = viz.get('x_column')
+                            y_col = viz.get('y_column')
+                            if x_col in df_clean.columns and y_col in df_clean.columns:
+                                fig = px.line(
+                                    df_clean,
+                                    x=x_col,
+                                    y=y_col,
+                                    title=title,
+                                    markers=True
+                                )
+                                st.plotly_chart(fig, use_container_width=True)
+                        
+                        elif viz_type == 'table':
+                            cols = viz.get('columns', [])
+                            valid_cols = [c for c in cols if c in df_clean.columns]
+                            if valid_cols:
+                                st.dataframe(
+                                    df_clean[valid_cols].head(10),
+                                    use_container_width=True
+                                )
+                        
+                        st.markdown("---")
+                    
+                    # Download option
+                    st.download_button(
+                        label="📥 Download Full Data",
+                        data=df_clean.to_csv(index=False).encode('utf-8'),
+                        file_name=f"survey_{survey_id}_data.csv",
+                        mime="text/csv"
+                    )
+                    
+                except json.JSONDecodeError as e:
+                    st.error(f"Error parsing AI response: {e}")
+                    st.code(response_text, language='text')
                 except Exception as e:
-                    st.error(f"Failed to generate summary: {e}")
-
-        st.markdown("---")
-        st.subheader("Visual Analytics")
-
-        for col in df_clean.columns:
-            if col in ['id', 'respondent_id', 'survey_id', 'name', 'address', 'start_time', 'end_time', 'device_info'] or df_clean[col].nunique() > 50:
-                continue
-
-            with st.container(border=True):
-                st.write(f"**Analysis for: `{col}`**")
-                if pd.api.types.is_numeric_dtype(df_clean[col]) and df_clean[col].nunique() > 10:
-                    fig = px.histogram(df_clean, x=col, title=f"Distribution of {col}")
-                    st.plotly_chart(fig, use_container_width=True)
-                else:
-                    fig = px.bar(df_clean[col].value_counts(), title=f"Count of {col}")
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.error(f"Error generating visualizations: {e}")
+                    st.info("💡 Make sure your API key is configured correctly.")
 
 def render_settings(t):
     st.title(f"⚙️ {t['nav_settings']}")
