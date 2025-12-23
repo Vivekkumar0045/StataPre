@@ -358,7 +358,8 @@ HTML_TEMPLATE = """
             <input type="hidden" name="device_info" id="device_info">
             <input type="hidden" name="geo_latitude" id="geo_latitude">
             <input type="hidden" name="geo_longitude" id="geo_longitude">
-            </form>
+            <!-- Form fields will be dynamically added here by JavaScript -->
+        </form>
         <div id="message" class="mt-6 p-4 rounded-lg text-center font-medium hidden"></div>
     </div>
 
