@@ -19,29 +19,66 @@
    
    After creating the bucket, you need to set up Row Level Security policies:
    
-   **Option A: Disable RLS (Easiest - Recommended)**
+   **Option A: Using SQL Editor (Recommended)**
+   
+   Go to SQL Editor in Supabase Dashboard and run these commands:
+   
+   ```sql
+   -- Policy 1: Allow anyone to upload HTML forms
+   CREATE POLICY "Allow public uploads to survey-forms"
+   ON storage.objects FOR INSERT
+   WITH CHECK (
+     bucket_id = 'survey-forms'
+     AND storage.extension(name) = 'html'
+     AND auth.role() = 'anon'
+   );
+
+   -- Policy 2: Allow anyone to read HTML forms
+   CREATE POLICY "Allow public reads from survey-forms"
+   ON storage.objects FOR SELECT
+   USING (
+     bucket_id = 'survey-forms'
+     AND storage.extension(name) = 'html'
+   );
+
+   -- Policy 3: Allow updating existing forms (for upsert)
+   CREATE POLICY "Allow public updates to survey-forms"
+   ON storage.objects FOR UPDATE
+   USING (
+     bucket_id = 'survey-forms'
+     AND storage.extension(name) = 'html'
+   )
+   WITH CHECK (
+     bucket_id = 'survey-forms'
+     AND storage.extension(name) = 'html'
+     AND auth.role() = 'anon'
+   );
+   ```
+   
+   **Option B: Disable RLS (Easiest)**
    - Click on the `survey-forms` bucket
    - Go to "Policies" tab
    - Click "Disable RLS" or click the three dots → "Edit bucket" → Uncheck "Enable RLS"
    
-   **Option B: Create Upload Policy (More Secure)**
+   **Option C: Create Upload Policy via Dashboard (Manual)**
    - Click on the `survey-forms` bucket
    - Go to "Policies" tab
-   - Click "New Policy"
-   - Choose "Custom policy"
-   - Policy name: `Allow public uploads`
-   - Operation: `INSERT`
-   - Target roles: `public`
-   - USING expression: `true`
-   - Click "Review" → "Save policy"
-   
-   Then create a read policy:
-   - Click "New Policy"
-   - Policy name: `Allow public reads`
-   - Operation: `SELECT`
-   - Target roles: `public`
-   - USING expression: `true`
-   - Click "Review" → "Save policy"
+   - Click "New Policy" → "Custom policy"
+   - **Upload Policy:**
+     - Policy name: `Allow public uploads`
+     - Operation: `INSERT`
+     - Target roles: `public` or `anon`
+     - WITH CHECK expression: `bucket_id = 'survey-forms' AND storage.extension(name) = 'html'`
+   - **Read Policy:**
+     - Policy name: `Allow public reads`
+     - Operation: `SELECT`
+     - Target roles: `public` or `anon`
+     - USING expression: `bucket_id = 'survey-forms' AND storage.extension(name) = 'html'`
+   - **Update Policy (for upsert):**
+     - Policy name: `Allow public updates`
+     - Operation: `UPDATE`
+     - Target roles: `public` or `anon`
+     - USING/WITH CHECK expression: `bucket_id = 'survey-forms' AND storage.extension(name) = 'html'`
 
 5. **Verify Bucket Settings**
    - The bucket should be publicly accessible
