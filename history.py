@@ -782,13 +782,16 @@ def render_store(t):
     st.info("💡 **Tip:** Complete more surveys to earn coins and unlock rewards!")
 
 def render_user_dashboard(t):
-    # Display coins at the top right
-    col1, col2 = st.columns([3, 1])
-    with col1:
+    # Display coins at the top right (only for non-admin users)
+    if st.session_state.get('role') != 'admin':
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.title(f"👋 {t['user_dashboard_welcome']}, {st.session_state.username}!")
+        with col2:
+            st.markdown("###")
+            st.metric("", f"🪙 {get_coins()} coins")
+    else:
         st.title(f"👋 {t['user_dashboard_welcome']}, {st.session_state.username}!")
-    with col2:
-        st.markdown("###")
-        st.metric("", f"🪙 {get_coins()} coins")
     st.markdown("---")
     deployed_surveys = [s for s in get_all_surveys() if s['status'] == 'Deployed']
     st.metric(t['metric_available_surveys'], len(deployed_surveys))
@@ -1021,13 +1024,16 @@ def render_survey_management(t):
 
 
 def render_take_survey(t):
-    # Display coins at the top right
-    col1, col2 = st.columns([3, 1])
-    with col1:
+    # Display coins at the top right (only for non-admin users)
+    if st.session_state.get('role') != 'admin':
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.title(f"✍️ {t['nav_take_survey']}")
+        with col2:
+            st.markdown("###")
+            st.metric("", f"🪙 {get_coins()} coins")
+    else:
         st.title(f"✍️ {t['nav_take_survey']}")
-    with col2:
-        st.markdown("###")
-        st.metric("", f"🪙 {get_coins()} coins")
     
     deployed_surveys = [s for s in get_all_surveys() if s['status'] == 'Deployed']
     if not deployed_surveys:
