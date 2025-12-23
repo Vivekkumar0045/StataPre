@@ -739,16 +739,21 @@ def render_survey_management(t):
                                 
                                 # Upload to Supabase Storage
                                 file_name = f"survey_{selected_id}_form.html"
-                                bucket_name = "survey-forms"  # You need to create this bucket in Supabase
+                                bucket_name = "survey-forms"
+                                
+                                # Delete old file if exists to ensure clean upload with new content-type
+                                try:
+                                    supabase.storage.from_(bucket_name).remove([file_name])
+                                except:
+                                    pass  # File might not exist yet
                                 
                                 # Upload file with proper content type so browser renders HTML
                                 supabase.storage.from_(bucket_name).upload(
-                                    file_name,
-                                    html_content.encode('utf-8'),
+                                    path=file_name,
+                                    file=html_content.encode('utf-8'),
                                     file_options={
                                         "content-type": "text/html; charset=utf-8",
-                                        "cache-control": "3600",
-                                        "upsert": "true"
+                                        "cache-control": "3600"
                                     }
                                 )
                                 
