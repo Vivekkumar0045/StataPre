@@ -12,7 +12,8 @@ from content import HTML_TEMPLATE # Import the HTML template
 import plotly.express as px
 import google.generativeai as genai
 from supabase import create_client, Client
-import ds_r1 , adhr 
+import ds_r1 , adhr
+import random 
 
 
 
@@ -140,11 +141,38 @@ def hash_password(password):
     """Hashes the password using SHA-256."""
     return hashlib.sha256(password.encode()).hexdigest()
 
+def init_coins():
+    """Initialize coins in session state if not exists."""
+    if 'user_coins' not in st.session_state:
+        st.session_state.user_coins = 0
+
+def add_coins(amount):
+    """Add coins to user's balance."""
+    if 'user_coins' not in st.session_state:
+        st.session_state.user_coins = 0
+    st.session_state.user_coins += amount
+
+def deduct_coins(amount):
+    """Deduct coins from user's balance."""
+    if 'user_coins' not in st.session_state:
+        st.session_state.user_coins = 0
+    if st.session_state.user_coins >= amount:
+        st.session_state.user_coins -= amount
+        return True
+    return False
+
+def get_coins():
+    """Get current coin balance."""
+    return st.session_state.get('user_coins', 0)
+
 def init_config():
     """Creates a default config file if it doesn't exist."""
     # Initialize LLM mode if not already set
     if 'llm_mode' not in st.session_state:
         st.session_state.llm_mode = 'online'
+    
+    # Initialize coins
+    init_coins()
     
     if not os.path.exists(CONFIG_FILE):
         default_config = {
@@ -556,8 +584,103 @@ def render_dashboard(t):
     col2.metric(t['metric_registered_enumerators'], total_users)
     col3.metric(t['metric_surveys_completed'], completed_respondents)
 
+def render_store(t):
+    """Render the rewards store."""
+    st.title("🏪 Rewards Store")
+    
+    # Display current balance prominently
+    col1, col2, col3 = st.columns([2, 1, 1])
+    with col1:
+        st.metric("Your Coins", f"🪙 {get_coins()}")
+    
+    st.markdown("---")
+    st.subheader("Available Rewards")
+    
+    # Define rewards catalog
+    rewards = [
+        {
+            "name": "Railway Ticket Discount (10%)",
+            "description": "Get 10% off on your next railway ticket booking",
+            "icon": "🚂",
+            "cost": 500,
+            "code": "RAIL10"
+        },
+        {
+            "name": "Railway Ticket Discount (20%)",
+            "description": "Get 20% off on your next railway ticket booking",
+            "icon": "🚄",
+            "cost": 800,
+            "code": "RAIL20"
+        },
+        {
+            "name": "JEE Application Fee Discount",
+            "description": "₹500 off on JEE application fee",
+            "icon": "📚",
+            "cost": 600,
+            "code": "JEE500"
+        },
+        {
+            "name": "NEET Application Fee Discount",
+            "description": "₹500 off on NEET application fee",
+            "icon": "🩺",
+            "cost": 600,
+            "code": "NEET500"
+        },
+        {
+            "name": "Petrol Pump Discount (5%)",
+            "description": "Get 5% discount at participating petrol pumps",
+            "icon": "⛽",
+            "cost": 450,
+            "code": "FUEL5"
+        },
+        {
+            "name": "Petrol Pump Discount (10%)",
+            "description": "Get 10% discount at participating petrol pumps",
+            "icon": "⛽",
+            "cost": 750,
+            "code": "FUEL10"
+        },
+        {
+            "name": "Government Forms Bundle",
+            "description": "₹200 off on various government form applications",
+            "icon": "📋",
+            "cost": 400,
+            "code": "GOVT200"
+        },
+    ]
+    
+    # Display rewards in a grid
+    for i in range(0, len(rewards), 2):
+        cols = st.columns(2)
+        for idx, col in enumerate(cols):
+            if i + idx < len(rewards):
+                reward = rewards[i + idx]
+                with col:
+                    with st.container(border=True):
+                        st.markdown(f"### {reward['icon']} {reward['name']}")
+                        st.write(reward['description'])
+                        st.markdown(f"**Cost:** 🪙 {reward['cost']} coins")
+                        
+                        if st.button(f"Redeem", key=f"redeem_{i+idx}"):
+                            if deduct_coins(reward['cost']):
+                                st.success(f"✅ Redeemed successfully! Your code: **{reward['code']}**")
+                                st.info("💡 Note this code down and use it during checkout/application")
+                                st.balloons()
+                                st.rerun()
+                            else:
+                                st.error(f"❌ Insufficient coins! You need {reward['cost']} coins but have {get_coins()} coins.")
+    
+    st.markdown("---")
+    st.info("💡 **Tip:** Complete more surveys to earn coins and unlock rewards!")
+
 def render_user_dashboard(t):
-    st.title(f"� {t['user_dashboard_welcome']}, {st.session_state.username}!")
+    # Display coins at the top right
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        st.title(f"👋 {t['user_dashboard_welcome']}, {st.session_state.username}!")
+    with col2:
+        st.markdown("###")
+        st.metric("", f"🪙 {get_coins()} coins")
     st.markdown("---")
     deployed_surveys = [s for s in get_all_surveys() if s['status'] == 'Deployed']
     st.metric(t['metric_available_surveys'], len(deployed_surveys))
@@ -809,7 +932,14 @@ def render_survey_management(t):
 
 
 def render_take_survey(t):
-    st.title(f"✍️ {t['nav_take_survey']}")
+    # Display coins at the top right
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        st.title(f"✍️ {t['nav_take_survey']}")
+    with col2:
+        st.markdown("###")
+        st.metric("", f"🪙 {get_coins()} coins")
+    
     deployed_surveys = [s for s in get_all_surveys() if s['status'] == 'Deployed']
     if not deployed_surveys:
         st.warning(t['no_deployed_surveys_warning'])
@@ -875,7 +1005,11 @@ def render_survey_form(survey_data, respondent_id, t):
             st.markdown("---")
         if st.form_submit_button("Submit Survey"):
             save_answers(respondent_id, answers)
-            st.success("Survey submitted successfully!")
+            # Award random coins between 500-900
+            coins_earned = random.randint(500, 900)
+            add_coins(coins_earned)
+            st.success(f"Survey submitted successfully! You earned 🪙 {coins_earned} coins!")
+            st.info(f"Your total balance: 🪙 {get_coins()} coins")
             st.balloons()
 
 def render_user_management(t):
@@ -1235,11 +1369,11 @@ def main_app():
             st.markdown("---")
 
             if st.session_state.role == 'admin':
-                page_options = ["nav_dashboard", "nav_survey_management", "nav_user_management", "nav_take_survey", "nav_data_quality", "nav_settings"]
-                page = st.radio("Navigation", page_options, format_func=lambda p: t.get(p, p), label_visibility="collapsed")
+                page_options = ["nav_dashboard", "nav_survey_management", "nav_user_management", "nav_take_survey", "nav_data_quality", "nav_store", "nav_settings"]
+                page = st.radio("Navigation", page_options, format_func=lambda p: t.get(p, p) if p != "nav_store" else "🏪 Store", label_visibility="collapsed")
             else: # Enumerator
-                page_options = ["nav_user_dashboard", "nav_take_survey"]
-                page = st.radio("Navigation", page_options, format_func=lambda p: t.get(p, p), label_visibility="collapsed")
+                page_options = ["nav_user_dashboard", "nav_take_survey", "nav_store"]
+                page = st.radio("Navigation", page_options, format_func=lambda p: t.get(p, p) if p != "nav_store" else "🏪 Store", label_visibility="collapsed")
 
             st.markdown("---")
             if st.button(t.get('logout_button', 'Logout')):
@@ -1251,6 +1385,7 @@ def main_app():
         elif page == "nav_take_survey": render_take_survey(t)
         elif page == "nav_user_management": render_user_management(t)
         elif page == "nav_data_quality": render_data_quality(t)
+        elif page == "nav_store": render_store(t)
         elif page == "nav_settings": render_settings(t)
 
 if __name__ == "__main__":
