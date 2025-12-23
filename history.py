@@ -952,7 +952,7 @@ def render_data_quality(t):
         return
 
     survey_options = {f"{s['id']}: {s['title']}": s['id'] for s in surveys}
-    selected_title = st.selectbox("Select a survey to analyze:", options=survey_options.keys())
+    selected_title = st.selectbox("Select a survey to analyze:", options=survey_options.keys(), key="data_quality_survey_select")
 
     if selected_title:
         survey_id = survey_options[selected_title]
@@ -974,25 +974,6 @@ def render_data_quality(t):
                 generate_visualization_config.clear()
                 st.success("Cache cleared! Regenerating...")
                 st.rerun()
-
-    surveys = get_all_surveys()
-    if not surveys:
-        st.warning("No surveys have been created yet.")
-        return
-
-    survey_options = {f"{s['id']}: {s['title']}": s['id'] for s in surveys}
-    selected_title = st.selectbox("Select a survey to analyze:", options=survey_options.keys())
-
-    if selected_title:
-        survey_id = survey_options[selected_title]
-        results_df = get_survey_results(survey_id)
-
-        if results_df.empty:
-            st.info("No results have been submitted for this survey yet.")
-            return
-
-        st.markdown("---")
-        st.subheader("📊 Data Overview")
 
         # Clean data
         df_clean = results_df.copy()
