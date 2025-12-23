@@ -209,7 +209,7 @@ def get_user(username):
         print(f"Error getting user: {e}")
         return None
 
-def add_survey(title, description, status, json_path, script_json_path=None):
+def add_survey(title, description, status, json_path):
     """Adds a new survey to the database and returns its ID."""
     try:
         data = {
@@ -225,13 +225,6 @@ def add_survey(title, description, status, json_path, script_json_path=None):
     except Exception as e:
         print(f"Error adding survey: {e}")
         return None
-
-def update_survey_script_path(survey_id, script_path):
-    """Updates the script path for an existing survey."""
-    try:
-        supabase.table("surveys").update({"script_json_path": script_path}).eq("id", survey_id).execute()
-    except Exception as e:
-        print(f"Error updating survey script path: {e}")
 
 def get_all_surveys():
     try:
@@ -625,8 +618,7 @@ def render_survey_management(t):
                         title=st.session_state.query.split('.')[0],
                         description=description,
                         status='Draft',
-                        json_path=json_path,
-                        script_json_path=None
+                        json_path=json_path
                     )
                 st.session_state.survey_id = new_survey_id
                 st.session_state.json_path = json_path
@@ -661,7 +653,7 @@ def render_survey_management(t):
                             survey_name=st.session_state.survey_name
                         )
                         if script_path and script_data:
-                            update_survey_script_path(st.session_state.survey_id, script_path)
+                            # Script saved locally in survey_scripts folder
                             st.session_state.script_path = script_path
                             st.session_state.script_data = script_data
                             st.success(f"Script saved to {script_path}")
@@ -724,7 +716,7 @@ def render_survey_management(t):
         if surveys:
             df_surveys = pd.DataFrame([dict(row) for row in surveys])
             df_surveys['created_at'] = pd.to_datetime(df_surveys['created_at']).dt.strftime('%Y-%m-%d %H:%M')
-            st.dataframe(df_surveys[['id', 'title', 'status', 'created_at', 'script_json_path']], use_container_width=True)
+            st.dataframe(df_surveys[['id', 'title', 'status', 'created_at']], use_container_width=True)
 
             st.subheader("Actions")
             selected_id = st.selectbox("Select Survey ID for Action", options=df_surveys['id'].tolist())
