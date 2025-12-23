@@ -1078,6 +1078,124 @@ def render_data_quality(t):
             file_name=f"survey_{survey_id}_data.csv",
             mime="text/csv"
         )
+        
+        # Sarvekshan AI Section
+        st.markdown("---")
+        st.subheader("💬 Ask Sarvekshan AI")
+        st.markdown("Get insights and answers about your survey data using AI")
+        
+        # Initialize chat history in session state
+        chat_key = f"chat_history_{survey_id}"
+        if chat_key not in st.session_state:
+            st.session_state[chat_key] = []
+        
+        # Quick action buttons
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            if st.button("📊 Summarize Data", key=f"summarize_{survey_id}"):
+                prompt = f"Summarize the key findings from this survey data:\n\n{df_clean.head(20).to_string()}"
+                st.session_state[chat_key].append({"role": "user", "content": "Summarize the survey data"})
+                with st.spinner("Analyzing..."):
+                    try:
+                        ai_model = genai.GenerativeModel(model_name="gemini-3-pro-preview")
+                        response = ai_model.generate_content(prompt)
+                        st.session_state[chat_key].append({"role": "assistant", "content": response.text})
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error: {e}")
+        
+        with col2:
+            if st.button("📈 Key Insights", key=f"insights_{survey_id}"):
+                prompt = f"Identify the top 3 key insights from this survey data:\n\n{df_clean.describe().to_string()}\n\nSample data:\n{df_clean.head(10).to_string()}"
+                st.session_state[chat_key].append({"role": "user", "content": "What are the key insights?"})
+                with st.spinner("Analyzing..."):
+                    try:
+                        ai_model = genai.GenerativeModel(model_name="gemini-3-pro-preview")
+                        response = ai_model.generate_content(prompt)
+                        st.session_state[chat_key].append({"role": "assistant", "content": response.text})
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error: {e}")
+        
+        with col3:
+            if st.button("🔍 Recommendations", key=f"recommendations_{survey_id}"):
+                prompt = f"Based on this survey data, provide actionable recommendations:\n\n{df_clean.head(20).to_string()}"
+                st.session_state[chat_key].append({"role": "user", "content": "Give me recommendations"})
+                with st.spinner("Analyzing..."):
+                    try:
+                        ai_model = genai.GenerativeModel(model_name="gemini-3-pro-preview")
+                        response = ai_model.generate_content(prompt)
+                        st.session_state[chat_key].append({"role": "assistant", "content": response.text})
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error: {e}")
+        
+        # Display chat history
+        if st.session_state[chat_key]:
+            st.markdown("### 💭 Conversation History")
+            for msg in st.session_state[chat_key]:
+                if msg["role"] == "user":
+                    with st.chat_message("user"):
+                        st.write(msg["content"])
+                else:
+                    with st.chat_message("assistant", avatar="🤖"):
+                        st.write(msg["content"])
+        
+        # Custom question input
+        st.markdown("### ✍️ Ask Your Question")
+        
+        # Build context from data
+        data_context = f"""Survey Data Summary:
+- Total Responses: {len(df_clean)}
+- Columns: {', '.join(df_clean.columns)}
+- Sample Data:
+{df_clean.head(10).to_string()}
+
+Statistics:
+{df_clean.describe().to_string()}
+"""
+        
+        user_question = st.text_area(
+            "Type your question about the survey data:",
+            placeholder="e.g., What is the most common response? Are there any trends? What percentage of respondents...",
+            key=f"question_input_{survey_id}",
+            height=100
+        )
+        
+        col_send, col_clear = st.columns([4, 1])
+        with col_send:
+            if st.button("🚀 Ask Sarvekshan AI", key=f"ask_ai_{survey_id}", use_container_width=True):
+                if user_question.strip():
+                    st.session_state[chat_key].append({"role": "user", "content": user_question})
+                    
+                    # Build conversation history for context
+                    conversation_context = "\n\n".join([
+                        f"{'User' if msg['role'] == 'user' else 'Assistant'}: {msg['content']}"
+                        for msg in st.session_state[chat_key][-4:]  # Last 2 exchanges
+                    ])
+                    
+                    full_prompt = f"""{data_context}
+
+Previous conversation:
+{conversation_context}
+
+Answer the user's question based on the survey data above. Be specific, use data to support your answers, and provide actionable insights."""
+                    
+                    with st.spinner("🤖 Sarvekshan AI is thinking..."):
+                        try:
+                            ai_model = genai.GenerativeModel(model_name="gemini-3-pro-preview")
+                            response = ai_model.generate_content(full_prompt)
+                            st.session_state[chat_key].append({"role": "assistant", "content": response.text})
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Error: {e}")
+                else:
+                    st.warning("Please enter a question")
+        
+        with col_clear:
+            if st.button("🗑️ Clear", key=f"clear_chat_{survey_id}", use_container_width=True):
+                st.session_state[chat_key] = []
+                st.rerun()
 
 def render_settings(t):
     st.title(f"⚙️ {t['nav_settings']}")
