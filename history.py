@@ -762,8 +762,24 @@ def render_survey_management(t):
                                 st.info("📋 **How to use:**\n1. Copy the link above\n2. Share it with respondents via email, WhatsApp, etc.\n3. Respondents can fill the survey in any browser\n4. Responses will be saved automatically")
                                 st.warning("⚠️ **Important:** Make sure the API server is running at https://vivek45537-kartavya.hf.space")
                             except Exception as e:
-                                st.error(f"Error uploading form: {e}")
-                                st.info("💡 **Setup Required:**\n1. Go to Supabase Dashboard → Storage\n2. Create a new bucket named 'survey-forms'\n3. Make it public\n4. Try again")
+                                error_msg = str(e)
+                                st.error(f"❌ Error uploading form: {error_msg}")
+                                
+                                if "403" in error_msg or "row-level security" in error_msg.lower() or "unauthorized" in error_msg.lower():
+                                    st.warning("### 🔒 RLS Policy Issue Detected")
+                                    st.markdown("""
+                                    **Quick Fix:**
+                                    1. Go to [Supabase Dashboard → Storage](https://supabase.com/dashboard)
+                                    2. Click on `survey-forms` bucket
+                                    3. Go to **Policies** tab
+                                    4. Click **"Disable RLS"** (easiest option)
+                                    
+                                    OR create these policies:
+                                    - **Allow public uploads**: Operation=INSERT, Target=public, Expression=`true`
+                                    - **Allow public reads**: Operation=SELECT, Target=public, Expression=`true`
+                                    """)
+                                else:
+                                    st.info("💡 **Setup Required:**\n1. Go to Supabase Dashboard → Storage\n2. Create a new bucket named 'survey-forms'\n3. Make it public\n4. Disable RLS or add upload policies\n5. Try again")
                 with col3:
                     if st.button("🗑️ Delete", key=f"delete_{selected_id}"):
                         delete_survey(selected_id)

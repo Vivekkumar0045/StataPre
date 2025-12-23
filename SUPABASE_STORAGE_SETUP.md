@@ -15,8 +15,37 @@
    - Public bucket: ✅ **Enable** (toggle ON)
    - Click "Create bucket"
 
-4. **Verify Bucket Settings**
+4. **Configure RLS Policies (IMPORTANT)**
+   
+   After creating the bucket, you need to set up Row Level Security policies:
+   
+   **Option A: Disable RLS (Easiest - Recommended)**
+   - Click on the `survey-forms` bucket
+   - Go to "Policies" tab
+   - Click "Disable RLS" or click the three dots → "Edit bucket" → Uncheck "Enable RLS"
+   
+   **Option B: Create Upload Policy (More Secure)**
+   - Click on the `survey-forms` bucket
+   - Go to "Policies" tab
+   - Click "New Policy"
+   - Choose "Custom policy"
+   - Policy name: `Allow public uploads`
+   - Operation: `INSERT`
+   - Target roles: `public`
+   - USING expression: `true`
+   - Click "Review" → "Save policy"
+   
+   Then create a read policy:
+   - Click "New Policy"
+   - Policy name: `Allow public reads`
+   - Operation: `SELECT`
+   - Target roles: `public`
+   - USING expression: `true`
+   - Click "Review" → "Save policy"
+
+5. **Verify Bucket Settings**
    - The bucket should be publicly accessible
+   - RLS should be disabled OR policies should allow public access
    - Anyone with the URL can view the HTML forms
    - Forms will be accessible at: `https://fmvpeaqtwgjsyktnjpfa.supabase.co/storage/v1/object/public/survey-forms/survey_X_form.html`
 
