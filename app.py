@@ -183,10 +183,6 @@ def init_config():
                 {
                     "username": "admin user",
                     "password_hash": hash_password("786")
-                },
-                {
-                    "username": "developer",
-                    "password_hash": hash_password("45537")
                 }
             ]
         }
@@ -493,7 +489,6 @@ def render_login_page():
                     st.session_state.role = user['role']
                     st.session_state.username = user['username']
                     st.session_state.language = user['language']
-                    st.session_state.is_developer = False
                     st.rerun()
                 else:
                     st.error(t.get("invalid_credentials_error", "Invalid credentials."))
@@ -716,14 +711,6 @@ def render_user_dashboard(t):
 def render_survey_management(t):
     st.title(f"📝 {t['nav_survey_management']}")
 
-    # --- NEW: Developer Mode UI ---
-    if st.session_state.get("is_developer", False):
-        st.info("🚀 Developer Mode Activated")
-        dev_mode = st.radio("Developer Mode:", ("Generate New (LLM)", "Use Dev Files (Skip LLM)"), horizontal=True)
-    else:
-        dev_mode = "Generate New (LLM)"
-
-
     # --- CSV Editing Stage ---
     if 'csv_editing_stage' in st.session_state and st.session_state.csv_editing_stage:
         st.subheader("Step 2: Review and Edit Survey Columns")
@@ -776,34 +763,11 @@ def render_survey_management(t):
     else:
         with st.expander(f"➕ {t['create_new_survey_expander']}", expanded=True):
             with st.form("survey_creation_form"):
-                query = st.text_area(t['generate_survey_prompt'], height=150, disabled=(dev_mode == "Use Dev Files (Skip LLM)"))
+                query = st.text_area(t['generate_survey_prompt'], height=150)
                 
                 if st.form_submit_button(t['generate_survey_button']):
-                    # --- Developer Skip Logic ---
-                    if dev_mode == "Use Dev Files (Skip LLM)":
-                        try:
-                            with open("assets/devquery.txt", "r") as f:
-                                dev_query = f.read().strip()
-                            
-                            survey_name = create_unique_survey_name(dev_query)
-                            
-                            # Copy dev files to new unique names
-                            shutil.copy("survey_responses/dev.csv", f"survey_responses/{survey_name}.csv")
-                            shutil.copy("survey_responses/dev.txt", f"survey_responses/{survey_name}.txt")
-                            shutil.copy("survey_jsons/dev.json", f"survey_jsons/{survey_name}.json")
-
-                            with open(f"survey_responses/{survey_name}.txt", "r") as f:
-                                description = f.read().strip()
-
-                            add_survey(dev_query, description, 'Draft', f"survey_jsons/{survey_name}.json")
-                            st.success("🎉 Dev survey created instantly!")
-                            st.rerun()
-
-                        except FileNotFoundError as e:
-                            st.error(f"Developer file not found: {e}. Please create dev.csv, dev.txt, assets/devquery.txt, and dev.json.")
-
                     # --- Standard Generation Logic ---
-                    elif query.strip():
+                    if query.strip():
                         with st.spinner("Generating Survey Blueprint..."):
                             generate_survey_design(query)
                         survey_name = create_unique_survey_name(query)
@@ -1060,7 +1024,7 @@ def render_settings(t):
 
 def logout():
     """Clears the session state to log the user out."""
-    for key in ['logged_in', 'role', 'username', 'language', 'csv_editing_stage', 'editable_df', 'survey_name', 'query', 'is_developer']:
+    for key in ['logged_in', 'role', 'username', 'language', 'csv_editing_stage', 'editable_df', 'survey_name', 'query']:
         if key in st.session_state:
             del st.session_state[key]
     st.rerun()

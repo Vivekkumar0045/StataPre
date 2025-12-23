@@ -184,10 +184,6 @@ def init_config():
                 {
                     "username": "admin user",
                     "password_hash": hash_password("786")
-                },
-                {
-                    "username": "developer",
-                    "password_hash": hash_password("45537")
                 }
             ]
         }
@@ -520,7 +516,6 @@ def render_login_page():
                         st.session_state.role = "admin"
                         st.session_state.username = admin_config.get("username")
                         st.session_state.language = "en"
-                        st.session_state.is_developer = (admin_user == "developer")
                         logged_in_successfully = True
                         st.rerun()
                 if not logged_in_successfully:
@@ -538,7 +533,6 @@ def render_login_page():
                     st.session_state.role = user['role']
                     st.session_state.username = user['username']
                     st.session_state.language = user['language']
-                    st.session_state.is_developer = False
                     st.rerun()
                 else:
                     st.error(t.get("invalid_credentials_error", "Invalid credentials."))
@@ -691,12 +685,6 @@ def render_user_dashboard(t):
 def render_survey_management(t):
     st.title(f"📝 {t['nav_survey_management']}")
 
-    if st.session_state.get("is_developer", False):
-        st.info("🚀 Developer Mode Activated")
-        dev_mode = st.radio("Developer Mode:", ("Generate New (LLM)", "Use Dev Files (Skip LLM)"), horizontal=True)
-    else:
-        dev_mode = "Generate New (LLM)"
-
     # --- STAGE 1: CSV Editing ---
     if st.session_state.get('csv_editing_stage', False):
         st.subheader("Step 2: Review and Edit Survey Columns")
@@ -801,22 +789,9 @@ def render_survey_management(t):
     else:
         with st.expander(f"➕ {t['create_new_survey_expander']}", expanded=True):
             with st.form("survey_creation_form"):
-                query = st.text_area(t['generate_survey_prompt'], height=150, disabled=(dev_mode == "Use Dev Files (Skip LLM)"))
+                query = st.text_area(t['generate_survey_prompt'], height=150)
                 if st.form_submit_button(t['generate_survey_button']):
-                    if dev_mode == "Use Dev Files (Skip LLM)":
-                        try:
-                            with open("assets/devquery.txt", "r") as f: dev_query = f.read().strip()
-                            survey_name = create_unique_survey_name(dev_query)
-                            shutil.copy("survey_responses/dev.csv", f"survey_responses/{survey_name}.csv")
-                            shutil.copy("survey_responses/dev.txt", f"survey_responses/{survey_name}.txt")
-                            shutil.copy("survey_jsons/dev.json", f"survey_jsons/{survey_name}.json")
-                            with open(f"survey_responses/{survey_name}.txt", "r") as f: description = f.read().strip()
-                            add_survey(dev_query, description, 'Draft', f"survey_jsons/{survey_name}.json")
-                            st.success("🎉 Dev survey created instantly!")
-                            st.rerun()
-                        except FileNotFoundError as e:
-                            st.error(f"Developer file not found: {e}.")
-                    elif query.strip():
+                    if query.strip():
                         with st.spinner("Generating Survey Blueprint..."):
                             generate_survey_design(query)
                         survey_name = create_unique_survey_name(query)
@@ -1338,7 +1313,7 @@ def render_settings(t):
 def logout():
     """Clears the session state to log the user out."""
     keys_to_clear = [
-        'logged_in', 'role', 'username', 'language', 'is_developer',
+        'logged_in', 'role', 'username', 'language',
         'csv_editing_stage', 'editable_df', 'survey_name', 'query',
         'question_review_stage', 'json_path', 'description',
         'script_path', 'script_data', 'survey_id'
