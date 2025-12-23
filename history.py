@@ -887,6 +887,50 @@ def render_user_management(t):
     else:
         st.info("No users found.")
 
+@st.cache_data(ttl=3600)  # Cache for 1 hour
+def generate_visualization_config(survey_id, columns_json):
+    """Generate visualization configuration using Gemini LLM and cache it."""
+    try:
+        columns_info = json.loads(columns_json)
+        
+        prompt = f"""Analyze this survey data and suggest visualizations. Return ONLY a valid JSON object with this exact structure:
+{{
+  "visualizations": [
+    {{"type": "pie", "column": "column_name", "title": "Chart Title"}},
+    {{"type": "bar", "column": "column_name", "title": "Chart Title"}},
+    {{"type": "line", "x_column": "column_name", "y_column": "column_name", "title": "Chart Title"}},
+    {{"type": "table", "columns": ["col1", "col2"], "title": "Table Title"}}
+  ]
+}}
+
+Rules:
+- pie: for categorical data with 2-10 unique values
+- bar: for categorical data with counts
+- line: for numeric trends over time or sequences
+- table: for detailed data comparison
+- Maximum 4 visualizations
+- Use actual column names from the data
+
+Data columns:
+{json.dumps(columns_info, indent=2)}
+
+Return only the JSON, no markdown, no explanation."""
+
+        response = model.generate_content(prompt)
+        response_text = response.text.strip()
+        
+        # Extract JSON from response
+        if '```json' in response_text:
+            response_text = response_text.split('```json')[1].split('```')[0].strip()
+        elif '```' in response_text:
+            response_text = response_text.split('```')[1].split('```')[0].strip()
+        
+        viz_config = json.loads(response_text)
+        return viz_config
+    except Exception as e:
+        st.error(f"Error generating visualization config: {e}")
+        return {"visualizations": []}
+
 def render_data_quality(t):
     st.title(f"🔍 {t['nav_data_quality']}")
 
@@ -928,130 +972,90 @@ def render_data_quality(t):
         st.markdown("---")
         st.subheader("🤖 AI-Powered Visualizations")
         
-        if st.button("🎨 Generate Smart Visualizations", use_container_width=True):
-            with st.spinner("Analyzing data with Gemini AI..."):
-                try:
-                    # Prepare data summary for LLM
-                    columns_info = []
-                    for col in df_clean.columns:
-                        if col not in ['id', 'survey_id', 'created_at', 'start_time', 'end_time']:
-                            dtype = 'numeric' if pd.api.types.is_numeric_dtype(df_clean[col]) else 'categorical'
-                            unique_count = df_clean[col].nunique()
-                            columns_info.append({
-                                'name': col,
-                                'type': dtype,
-                                'unique_values': unique_count,
-                                'sample': str(df_clean[col].head(3).tolist())
-                            })
-                    
-                    # Ask Gemini to suggest visualizations
-                    prompt = f"""Analyze this survey data and suggest visualizations. Return ONLY a valid JSON object with this exact structure:
-{{
-  "visualizations": [
-    {{"type": "pie", "column": "column_name", "title": "Chart Title"}},
-    {{"type": "bar", "column": "column_name", "title": "Chart Title"}},
-    {{"type": "line", "x_column": "column_name", "y_column": "column_name", "title": "Chart Title"}},
-    {{"type": "table", "columns": ["col1", "col2"], "title": "Table Title"}}
-  ]
-}}
-
-Rules:
-- pie: for categorical data with 2-10 unique values
-- bar: for categorical data with counts
-- line: for numeric trends over time or sequences
-- table: for detailed data comparison
-- Maximum 4 visualizations
-- Use actual column names from the data
-
-Data columns:
-{json.dumps(columns_info, indent=2)}
-
-Return only the JSON, no markdown, no explanation."""
-
-                    response = model.generate_content(prompt)
-                    response_text = response.text.strip()
-                    
-                    # Extract JSON from response
-                    if '```json' in response_text:
-                        response_text = response_text.split('```json')[1].split('```')[0].strip()
-                    elif '```' in response_text:
-                        response_text = response_text.split('```')[1].split('```')[0].strip()
-                    
-                    viz_config = json.loads(response_text)
-                    
-                    # Generate visualizations
-                    st.success("✅ Analysis complete! Generating visualizations...")
-                    
-                    for idx, viz in enumerate(viz_config.get('visualizations', [])):
-                        viz_type = viz.get('type')
-                        title = viz.get('title', 'Visualization')
-                        
-                        st.markdown(f"### {idx + 1}. {title}")
-                        
-                        if viz_type == 'pie':
-                            col = viz.get('column')
-                            if col in df_clean.columns:
-                                value_counts = df_clean[col].value_counts()
-                                fig = px.pie(
-                                    values=value_counts.values,
-                                    names=value_counts.index,
-                                    title=title,
-                                    hole=0.3
-                                )
-                                fig.update_traces(textposition='inside', textinfo='percent+label')
-                                st.plotly_chart(fig, use_container_width=True)
-                        
-                        elif viz_type == 'bar':
-                            col = viz.get('column')
-                            if col in df_clean.columns:
-                                value_counts = df_clean[col].value_counts()
-                                fig = px.bar(
-                                    x=value_counts.index,
-                                    y=value_counts.values,
-                                    title=title,
-                                    labels={'x': col, 'y': 'Count'}
-                                )
-                                fig.update_layout(showlegend=False)
-                                st.plotly_chart(fig, use_container_width=True)
-                        
-                        elif viz_type == 'line':
-                            x_col = viz.get('x_column')
-                            y_col = viz.get('y_column')
-                            if x_col in df_clean.columns and y_col in df_clean.columns:
-                                fig = px.line(
-                                    df_clean,
-                                    x=x_col,
-                                    y=y_col,
-                                    title=title,
-                                    markers=True
-                                )
-                                st.plotly_chart(fig, use_container_width=True)
-                        
-                        elif viz_type == 'table':
-                            cols = viz.get('columns', [])
-                            valid_cols = [c for c in cols if c in df_clean.columns]
-                            if valid_cols:
-                                st.dataframe(
-                                    df_clean[valid_cols].head(10),
-                                    use_container_width=True
-                                )
-                        
-                        st.markdown("---")
-                    
-                    # Download option
-                    st.download_button(
-                        label="📥 Download Full Data",
-                        data=df_clean.to_csv(index=False).encode('utf-8'),
-                        file_name=f"survey_{survey_id}_data.csv",
-                        mime="text/csv"
-                    )
-                    
-                except json.JSONDecodeError as e:
-                    st.error(f"Error parsing AI response: {e}")
-                    st.code(response_text, language='text')
-                except Exception as e:
-                    st.error(f"Error generating visualizations: {e}")
-                    st.info("💡 Make sure your API key is configured correctly.")
+        # Prepare data summary for LLM
+        columns_info = []
+        for col in df_clean.columns:
+            if col not in ['id', 'survey_id', 'created_at', 'start_time', 'end_time']:
+                dtype = 'numeric' if pd.api.types.is_numeric_dtype(df_clean[col]) else 'categorical'
+                unique_count = df_clean[col].nunique()
+                columns_info.append({
+                    'name': col,
+                    'type': dtype,
+                    'unique_values': unique_count,
+                    'sample': str(df_clean[col].head(3).tolist())
+                })
+        
+        # Auto-generate visualizations with caching
+        with st.spinner("🎨 Generating smart visualizations..."):
+            viz_config = generate_visualization_config(survey_id, json.dumps(columns_info))
+        
+        # Generate visualizations
+        for idx, viz in enumerate(viz_config.get('visualizations', [])):
+            viz_type = viz.get('type')
+            title = viz.get('title', 'Visualization')
+            
+            st.markdown(f"### {idx + 1}. {title}")
+            
+            try:
+                if viz_type == 'pie':
+                    col = viz.get('column')
+                    if col in df_clean.columns:
+                        value_counts = df_clean[col].value_counts()
+                        fig = px.pie(
+                            values=value_counts.values,
+                            names=value_counts.index,
+                            title=title,
+                            hole=0.3
+                        )
+                        fig.update_traces(textposition='inside', textinfo='percent+label')
+                        st.plotly_chart(fig, use_container_width=True)
+                
+                elif viz_type == 'bar':
+                    col = viz.get('column')
+                    if col in df_clean.columns:
+                        value_counts = df_clean[col].value_counts()
+                        fig = px.bar(
+                            x=value_counts.index,
+                            y=value_counts.values,
+                            title=title,
+                            labels={'x': col, 'y': 'Count'}
+                        )
+                        fig.update_layout(showlegend=False)
+                        st.plotly_chart(fig, use_container_width=True)
+                
+                elif viz_type == 'line':
+                    x_col = viz.get('x_column')
+                    y_col = viz.get('y_column')
+                    if x_col in df_clean.columns and y_col in df_clean.columns:
+                        fig = px.line(
+                            df_clean,
+                            x=x_col,
+                            y=y_col,
+                            title=title,
+                            markers=True
+                        )
+                        st.plotly_chart(fig, use_container_width=True)
+                
+                elif viz_type == 'table':
+                    cols = viz.get('columns', [])
+                    valid_cols = [c for c in cols if c in df_clean.columns]
+                    if valid_cols:
+                        st.dataframe(
+                            df_clean[valid_cols].head(10),
+                            use_container_width=True
+                        )
+                
+                st.markdown("---")
+            except Exception as e:
+                st.warning(f"Could not generate {viz_type} chart: {e}")
+        
+        # Download option
+        st.download_button(
+            label="📥 Download Full Data",
+            data=df_clean.to_csv(index=False).encode('utf-8'),
+            file_name=f"survey_{survey_id}_data.csv",
+            mime="text/csv"
+        )
 
 def render_settings(t):
     st.title(f"⚙️ {t['nav_settings']}")
