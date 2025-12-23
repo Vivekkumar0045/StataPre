@@ -28,10 +28,16 @@ model = genai.GenerativeModel(model_name="gemini-3-flash-preview")
 
 # --- Import your custom functions ---
 # Ensure ds_r1.py and adhr.py are in the same directory as this script.
+import sys
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 try:
-    from ds_r1 import generate_survey_design
-    from adhr import extract_and_process
-except ImportError:
+    import ds_r1
+    import adhr
+    generate_survey_design = ds_r1.generate_survey_design
+    extract_and_process = adhr.extract_and_process
+except ImportError as e:
+    st.error(f"Import error: {e}")
     # This allows the app to run without the files for initial setup.
     # A proper error will be shown if the user tries to generate a survey.
     def generate_survey_design(query):
