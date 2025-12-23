@@ -893,28 +893,40 @@ def generate_visualization_config(survey_id, columns_json):
     try:
         columns_info = json.loads(columns_json)
         
-        prompt = f"""Analyze this survey data and suggest visualizations. Return ONLY a valid JSON object with this exact structure:
+        prompt = f"""Analyze this survey data and suggest the best visualizations. Return ONLY a valid JSON object.
+
+IMPORTANT: You can create MULTIPLE visualizations of the same type if needed. Be smart about choosing the right charts for the data.
+
+Example structure:
 {{
   "visualizations": [
-    {{"type": "pie", "column": "column_name", "title": "Chart Title"}},
-    {{"type": "bar", "column": "column_name", "title": "Chart Title"}},
-    {{"type": "line", "x_column": "column_name", "y_column": "column_name", "title": "Chart Title"}},
-    {{"type": "table", "columns": ["col1", "col2"], "title": "Table Title"}}
+    {{"type": "pie", "column": "gender", "title": "Gender Distribution"}},
+    {{"type": "pie", "column": "age_group", "title": "Age Group Distribution"}},
+    {{"type": "bar", "column": "satisfaction", "title": "Satisfaction Levels"}},
+    {{"type": "bar", "column": "location", "title": "Responses by Location"}},
+    {{"type": "line", "x_column": "date", "y_column": "score", "title": "Score Trend"}},
+    {{"type": "table", "columns": ["name", "age", "score"], "title": "Top Respondents"}}
   ]
 }}
 
-Rules:
-- pie: for categorical data with 2-10 unique values
-- bar: for categorical data with counts
-- line: for numeric trends over time or sequences
-- table: for detailed data comparison
-- Maximum 4 visualizations
-- Use actual column names from the data
+Chart Types:
+- pie: Best for categorical data with 2-10 unique values (gender, yes/no, categories)
+- bar: Best for categorical counts, frequencies, comparisons
+- line: Best for numeric trends over time, sequences, or ordered data
+- table: Best for showing detailed records with multiple columns
+
+Guidelines:
+- Create 4-8 visualizations total (mix of types)
+- Use multiple pie/bar charts for different categorical columns
+- Use line charts for any time-series or numeric progression data
+- Include at least one table for detailed data view
+- Prioritize the most insightful columns
+- Skip metadata columns (id, timestamps, device_info)
 
 Data columns:
 {json.dumps(columns_info, indent=2)}
 
-Return only the JSON, no markdown, no explanation."""
+Return ONLY the JSON object, no markdown formatting, no explanation."""
 
         response = model.generate_content(prompt)
         response_text = response.text.strip()
@@ -933,6 +945,35 @@ Return only the JSON, no markdown, no explanation."""
 
 def render_data_quality(t):
     st.title(f"🔍 {t['nav_data_quality']}")
+
+    surveys = get_all_surveys()
+    if not surveys:
+        st.warning("No surveys have been created yet.")
+        return
+
+    survey_options = {f"{s['id']}: {s['title']}": s['id'] for s in surveys}
+    selected_title = st.selectbox("Select a survey to analyze:", options=survey_options.keys())
+
+    if selected_title:
+        survey_id = survey_options[selected_title]
+        results_df = get_survey_results(survey_id)
+
+        if results_df.empty:
+            st.info("No results have been submitted for this survey yet.")
+            return
+
+        st.markdown("---")
+        
+        # Add cache clear button
+        col_a, col_b = st.columns([3, 1])
+        with col_a:
+            st.subheader("📊 Data Overview")
+        with col_b:
+            if st.button("🔄 Regenerate Charts", help="Clear cache and generate new visualizations"):
+                # Clear the specific cache for this survey
+                generate_visualization_config.clear()
+                st.success("Cache cleared! Regenerating...")
+                st.rerun()
 
     surveys = get_all_surveys()
     if not surveys:
