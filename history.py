@@ -732,23 +732,38 @@ def render_survey_management(t):
                     if st.button("🔗 Share Form", key=f"share_{selected_id}"):
                         html_path = generate_html_form(survey_details)
                         if html_path:
-                            # Read the HTML file content
-                            with open(html_path, 'r', encoding='utf-8') as f:
-                                html_content = f.read()
-                            
-                            # Show download button
-                            st.download_button(
-                                label="⬇️ Download Survey Form",
-                                data=html_content,
-                                file_name=f"survey_{selected_id}_form.html",
-                                mime="text/html",
-                                help="Download and share this HTML file"
-                            )
-                            
-                            # Display instructions
-                            st.success("✅ Shareable form generated!")
-                            st.info("📋 **How to use:**\n1. Download the HTML form\n2. Share the file with respondents\n3. Respondents can open it in any browser\n4. Responses will be saved to the database automatically")
-                            st.warning("⚠️ **Important:** Make sure the API server is running at https://vivek45537-kartavya.hf.space")
+                            try:
+                                # Read the HTML file content
+                                with open(html_path, 'r', encoding='utf-8') as f:
+                                    html_content = f.read()
+                                
+                                # Upload to Supabase Storage
+                                file_name = f"survey_{selected_id}_form.html"
+                                bucket_name = "survey-forms"  # You need to create this bucket in Supabase
+                                
+                                # Upload file
+                                supabase.storage.from_(bucket_name).upload(
+                                    file_name,
+                                    html_content.encode('utf-8'),
+                                    file_options={"content-type": "text/html", "upsert": "true"}
+                                )
+                                
+                                # Get public URL
+                                public_url = supabase.storage.from_(bucket_name).get_public_url(file_name)
+                                
+                                # Display shareable link
+                                st.success("✅ Shareable form generated!")
+                                st.markdown(f"### 🔗 Share this link:")
+                                st.code(public_url, language=None)
+                                
+                                # Copy button using link
+                                st.link_button("📋 Open Form", public_url, use_container_width=True)
+                                
+                                st.info("📋 **How to use:**\n1. Copy the link above\n2. Share it with respondents via email, WhatsApp, etc.\n3. Respondents can fill the survey in any browser\n4. Responses will be saved automatically")
+                                st.warning("⚠️ **Important:** Make sure the API server is running at https://vivek45537-kartavya.hf.space")
+                            except Exception as e:
+                                st.error(f"Error uploading form: {e}")
+                                st.info("💡 **Setup Required:**\n1. Go to Supabase Dashboard → Storage\n2. Create a new bucket named 'survey-forms'\n3. Make it public\n4. Try again")
                 with col3:
                     if st.button("🗑️ Delete", key=f"delete_{selected_id}"):
                         delete_survey(selected_id)
