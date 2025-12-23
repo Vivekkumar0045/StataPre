@@ -1464,8 +1464,8 @@ def main_app():
             st.markdown("---")
 
             if st.session_state.role == 'admin':
-                page_options = ["nav_dashboard", "nav_survey_management", "nav_user_management", "nav_take_survey", "nav_data_quality", "nav_store", "nav_settings"]
-                page = st.radio("Navigation", page_options, format_func=lambda p: "🧪 Test a Survey" if p == "nav_take_survey" else ("🏪 Store" if p == "nav_store" else t.get(p, p)), label_visibility="collapsed")
+                page_options = ["nav_dashboard", "nav_survey_management", "nav_user_management", "nav_take_survey", "nav_data_quality", "nav_settings"]
+                page = st.radio("Navigation", page_options, format_func=lambda p: "🧪 Test a Survey" if p == "nav_take_survey" else t.get(p, p), label_visibility="collapsed")
             else: # Enumerator
                 page_options = ["nav_user_dashboard", "nav_take_survey", "nav_store"]
                 page = st.radio("Navigation", page_options, format_func=lambda p: t.get(p, p) if p != "nav_store" else "🏪 Store", label_visibility="collapsed")
