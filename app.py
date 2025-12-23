@@ -13,6 +13,8 @@ import webbrowser
 from content import HTML_TEMPLATE # Import the HTML template
 import plotly.express as px
 import google.generativeai as genai
+import ds_r1.py,adhr.py
+
 
 # Configure Google Generative AI
 # Use Streamlit secrets for API key
