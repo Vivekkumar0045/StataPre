@@ -3,14 +3,18 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 import os
-import sqlite3
 import uvicorn
 import requests
 from datetime import datetime
+from supabase import create_client, Client
 
 # --- SETUP ---
 app = FastAPI()
-DB_NAME = "survey_portal.db"
+
+# Load Supabase credentials from environment variables or config
+SUPABASE_URL = os.getenv("SUPABASE_URL", "https://fmvpeaqtwgjsyktnjpfa.supabase.co")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY", "sb_publishable_BdqDQJZ3UTt8thycysxDkQ_vdoYG6J8")
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # This is crucial for allowing the HTML file (opened from your local file system)
 # to communicate with this server.
@@ -23,12 +27,6 @@ app.add_middleware(
 )
 
 # --- HELPER FUNCTIONS ---
-def get_db_connection():
-    """Establishes a connection to the SQLite database."""
-    conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row
-    return conn
-
 def get_geolocation(ip_address: str):
     """Gets geolocation data from a free API based on IP address."""
     if not ip_address or ip_address == "127.0.0.1":
@@ -57,15 +55,11 @@ async def serve_form(survey_id: int):
 @app.post("/submit/{survey_id}")
 async def handle_submission(survey_id: int, request: Request):
     """
-    Handles a new survey submission and saves it directly to the database,
-    which fixes the column mismatch and "View Results" issues.
+    Handles a new survey submission and saves it directly to Supabase database.
     """
     data = await request.json()
     
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
         # --- Capture Metadata ---
         ip_address = request.client.host
         location_data = get_geolocation(ip_address)
@@ -76,37 +70,33 @@ async def handle_submission(survey_id: int, request: Request):
         answers = data  # The rest of the data is the answers
 
         # 1. Create a new respondent entry with all collected metadata
-        cursor.execute(
-            """
-            INSERT INTO respondents (
-                survey_id, name, start_time, end_time, device_info, 
-                geo_latitude, geo_longitude, ip_address, ip_city, ip_country
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                survey_id, 
-                'Web Respondent', # A generic name for submissions from the web form
-                metadata.get('start_time'), 
-                metadata.get('end_time'),
-                metadata.get('device_info'), 
-                metadata.get('geo_latitude'), 
-                metadata.get('geo_longitude'),
-                ip_address, 
-                location_data['city'], 
-                location_data['country']
-            )
-        )
-        respondent_id = cursor.lastrowid
+        respondent_data = {
+            "survey_id": survey_id,
+            "name": "Web Respondent",  # A generic name for submissions from the web form
+            "start_time": metadata.get('start_time'),
+            "end_time": metadata.get('end_time'),
+            "device_info": metadata.get('device_info'),
+            "geo_latitude": metadata.get('geo_latitude'),
+            "geo_longitude": metadata.get('geo_longitude'),
+            "ip_address": ip_address,
+            "ip_city": location_data['city'],
+            "ip_country": location_data['country']
+        }
+        
+        respondent_response = supabase.table("respondents").insert(respondent_data).execute()
+        respondent_id = respondent_response.data[0]['id']
 
         # 2. Insert each answer into the answers table, linked to the new respondent
-        for question, answer in answers.items():
-            cursor.execute(
-                "INSERT INTO answers (respondent_id, question, answer) VALUES (?, ?, ?)",
-                (respondent_id, question, str(answer))
-            )
+        answers_data = [
+            {
+                "respondent_id": respondent_id,
+                "question": question,
+                "answer": str(answer)
+            }
+            for question, answer in answers.items()
+        ]
         
-        conn.commit()
-        conn.close()
+        supabase.table("answers").insert(answers_data).execute()
         
         return {"message": "Submission successful"}
     except Exception as e:

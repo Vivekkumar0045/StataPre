@@ -652,9 +652,23 @@ def render_survey_management(t):
                     if st.button("🔗 Share Form", key=f"share_{selected_id}"):
                         html_path = generate_html_form(survey_details)
                         if html_path:
-                            webbrowser.open(f"file://{os.path.abspath(html_path)}")
-                            st.success("Shareable form generated and opened in a new browser tab.")
-                            st.info("Please ensure the `api.py` server is running for submissions to work.")
+                            # Read the HTML file content
+                            with open(html_path, 'r', encoding='utf-8') as f:
+                                html_content = f.read()
+                            
+                            # Show download button
+                            st.download_button(
+                                label="⬇️ Download Survey Form",
+                                data=html_content,
+                                file_name=f"survey_{selected_id}_form.html",
+                                mime="text/html",
+                                help="Download and share this HTML file"
+                            )
+                            
+                            # Display instructions
+                            st.success("✅ Shareable form generated!")
+                            st.info("📋 **How to use:**\n1. Download the HTML form\n2. Share the file with respondents\n3. Respondents can open it in any browser\n4. Responses will be saved to the database automatically")
+                            st.warning("⚠️ **Important:** Make sure the API server is running at https://vivek45537-kartavya.hf.space")
                 with col3:
                     if st.button("🗑️ Delete", key=f"delete_{selected_id}"):
                         delete_survey(selected_id)

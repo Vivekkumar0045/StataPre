@@ -366,7 +366,7 @@ HTML_TEMPLATE = """
         const surveyQuestions = {survey_questions_json};
         const form = document.getElementById('surveyForm');
         const messageDiv = document.getElementById('message');
-        const API_URL = 'http://127.0.0.1:8000/submit/{survey_id}';
+        const API_URL = 'https://vivek45537-kartavya.hf.space/submit/{survey_id}';
 
         window.onload = function() {{
             document.getElementById('start_time').value = new Date().toISOString();

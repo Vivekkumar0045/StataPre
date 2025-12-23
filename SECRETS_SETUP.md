@@ -2,15 +2,25 @@
 
 ## Setup Instructions
 
-### Using Streamlit Secrets
+### 1. Configure Streamlit Secrets
 
-1. Open `.streamlit/secrets.toml` file
-2. Replace `YOUR_API_KEY_HERE` with your actual Google API key:
-   ```toml
-   GOOGLE_API_KEY = "your-actual-api-key-here"
-   ```
-3. Save the file
-4. Run the app: `streamlit run app.py`
+Open `.streamlit/secrets.toml` file and add your credentials:
+```toml
+GOOGLE_API_KEY = "your-actual-google-api-key-here"
+SUPABASE_URL = "your-supabase-project-url"
+SUPABASE_KEY = "your-supabase-anon-key"
+```
+
+### 2. Setup Supabase Database
+
+1. Go to your Supabase project dashboard
+2. Navigate to SQL Editor
+3. Run the SQL script from `supabase_schema.sql` file to create all tables
+4. Copy your project URL and anon/public key from Settings > API
+
+### 3. Run the App
+
+Run the app: `streamlit run app.py`
 
 ## Security Notes
 
@@ -18,6 +28,7 @@
 - Never commit `.streamlit/secrets.toml` to version control
 - The file is already in `.gitignore`
 - Keep your API keys secure and private
+- Use Supabase Row Level Security (RLS) policies for production
 
 ## Deploying to Streamlit Cloud
 
@@ -27,10 +38,13 @@ When deploying to Streamlit Cloud:
 3. Add your secrets in TOML format:
    ```toml
    GOOGLE_API_KEY = "your-actual-api-key-here"
+   SUPABASE_URL = "your-supabase-project-url"
+   SUPABASE_KEY = "your-supabase-anon-key"
    ```
 
 ## How It Works
 
-- `app.py` loads the API key from Streamlit secrets
-- The API key is then set as an environment variable for child modules (`ds_r1.py` and `adhr.py`)
-- All modules use the same API key automatically
+- `app.py` loads credentials from Streamlit secrets
+- Connects to Supabase for cloud database storage
+- All data is stored securely in Supabase PostgreSQL database
+- API key is set as environment variable for child modules (`ds_r1.py` and `adhr.py`)

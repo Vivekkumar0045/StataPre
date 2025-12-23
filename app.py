@@ -2,17 +2,16 @@ import streamlit as st
 import pandas as pd
 import json
 import os
-import sqlite3
 import requests
 import time
 from datetime import datetime
-import joblib
 import hashlib
 import shutil
 import webbrowser
 from content import HTML_TEMPLATE # Import the HTML template
 import plotly.express as px
 import google.generativeai as genai
+from supabase import create_client, Client
 import ds_r1 , adhr 
 
 
@@ -35,6 +34,15 @@ model = genai.GenerativeModel(model_name="gemini-3-flash-preview")
 
 # Set API key in environment for child modules
 os.environ['GOOGLE_API_KEY'] = GOOGLE_API_KEY
+
+# Initialize Supabase client
+try:
+    SUPABASE_URL = st.secrets["SUPABASE_URL"]
+    SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+except (KeyError, FileNotFoundError):
+    st.error("Please set SUPABASE_URL and SUPABASE_KEY in .streamlit/secrets.toml file")
+    st.stop()
 
 # Ollama configuration for offline mode
 OLLAMA_API_URL = "http://localhost:11434/api/generate"
@@ -162,145 +170,152 @@ def load_config():
     with open(CONFIG_FILE, "r") as f:
         return json.load(f)
 
-def get_db_connection():
-    """Establishes a connection to the SQLite database."""
-    conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row
-    return conn
-
 def init_db():
     """
-    Initializes the database. Creates tables if they don't exist and
-    updates existing tables with new columns to prevent errors.
+    Initializes the database tables in Supabase.
+    Tables should be created in Supabase dashboard with the following schema:
+    - surveys: id (int8, PK), title (text), description (text), status (text), json_path (text), created_at (timestamp)
+    - users: id (int8, PK), name (text), username (text, unique), password (text), role (text), language (text), contact (text), created_at (timestamp)
+    - respondents: id (int8, PK), survey_id (int8), name (text), dob (text), gender (text), aadhaar_number (text, unique), address (text), created_at (timestamp), start_time (text), end_time (text), device_info (text), geo_latitude (text), geo_longitude (text), ip_address (text), ip_city (text), ip_country (text)
+    - answers: id (int8, PK), respondent_id (int8), question (text), answer (text), created_at (timestamp)
     """
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    # --- Surveys Table ---
-    cursor.execute('''CREATE TABLE IF NOT EXISTS surveys (id INTEGER PRIMARY KEY, title TEXT, description TEXT, status TEXT DEFAULT 'Draft', json_path TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
-    
-    # --- Users Table (Schema updated to use 'username' instead of 'aadhaar_number') ---
-    cursor.execute('''CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT, username TEXT UNIQUE, password TEXT, role TEXT DEFAULT 'Enumerator', language TEXT DEFAULT 'en', contact TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
-
-    # --- Respondents Table (with new metadata columns) ---
-    cursor.execute('''CREATE TABLE IF NOT EXISTS respondents (
-        id INTEGER PRIMARY KEY, survey_id INTEGER, name TEXT, dob TEXT, gender TEXT, 
-        aadhaar_number TEXT UNIQUE, address TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        start_time TEXT, end_time TEXT, device_info TEXT, geo_latitude TEXT, geo_longitude TEXT,
-        ip_address TEXT, ip_city TEXT, ip_country TEXT,
-        FOREIGN KEY (survey_id) REFERENCES surveys (id)
-    )''')
-    
-    # --- Answers Table ---
-    cursor.execute('''CREATE TABLE IF NOT EXISTS answers (id INTEGER PRIMARY KEY, respondent_id INTEGER, question TEXT, answer TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (respondent_id) REFERENCES respondents (id))''')
-    
-    conn.commit()
-    conn.close()
+    # Tables are created in Supabase dashboard
+    pass
 
 # --- User and Survey CRUD Functions ---
 def add_user(name, username, password, language, contact):
-    conn = get_db_connection()
     try:
-        conn.execute(
-            "INSERT INTO users (name, username, password, language, contact) VALUES (?, ?, ?, ?, ?)",
-            (name, username, hash_password(password), language, contact)
-        )
-        conn.commit()
+        data = {
+            "name": name,
+            "username": username,
+            "password": hash_password(password),
+            "role": "Enumerator",
+            "language": language,
+            "contact": contact
+        }
+        supabase.table("users").insert(data).execute()
         return True
-    except sqlite3.IntegrityError:
-        return False # User already exists
-    finally:
-        conn.close()
+    except Exception as e:
+        print(f"Error adding user: {e}")
+        return False
 
 def get_user(username):
-    conn = get_db_connection()
-    user = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
-    conn.close()
-    return user
+    try:
+        response = supabase.table("users").select("*").eq("username", username).execute()
+        if response.data:
+            return response.data[0]
+        return None
+    except Exception as e:
+        print(f"Error getting user: {e}")
+        return None
 
 def add_survey(title, description, status, json_path):
-    conn = get_db_connection()
-    conn.execute("INSERT INTO surveys (title, description, status, json_path) VALUES (?, ?, ?, ?)", (title, description, status, json_path))
-    conn.commit()
-    conn.close()
+    try:
+        data = {
+            "title": title,
+            "description": description,
+            "status": status,
+            "json_path": json_path
+        }
+        supabase.table("surveys").insert(data).execute()
+    except Exception as e:
+        print(f"Error adding survey: {e}")
 
 def get_all_surveys():
-    conn = get_db_connection()
-    surveys = conn.execute("SELECT * FROM surveys ORDER BY created_at DESC").fetchall()
-    conn.close()
-    return surveys
+    try:
+        response = supabase.table("surveys").select("*").order("created_at", desc=True).execute()
+        return response.data
+    except Exception as e:
+        print(f"Error getting surveys: {e}")
+        return []
     
 def update_survey_status(survey_id, status):
-    conn = get_db_connection()
-    conn.execute("UPDATE surveys SET status = ? WHERE id = ?", (status, survey_id))
-    conn.commit()
-    conn.close()
+    try:
+        supabase.table("surveys").update({"status": status}).eq("id", survey_id).execute()
+    except Exception as e:
+        print(f"Error updating survey status: {e}")
 
 def delete_survey(survey_id):
-    conn = get_db_connection()
-    conn.execute("DELETE FROM surveys WHERE id = ?", (survey_id,))
-    conn.commit()
-    conn.close()
+    try:
+        supabase.table("surveys").delete().eq("id", survey_id).execute()
+    except Exception as e:
+        print(f"Error deleting survey: {e}")
     
 def get_all_users():
-    conn = get_db_connection()
-    users = conn.execute("SELECT id, name, username, role, language, contact FROM users ORDER BY created_at DESC").fetchall()
-    conn.close()
-    return users
+    try:
+        response = supabase.table("users").select("id, name, username, role, language, contact").order("created_at", desc=True).execute()
+        return response.data
+    except Exception as e:
+        print(f"Error getting users: {e}")
+        return []
 
 def add_respondent(survey_id, name, dob, gender, aadhaar, address):
-    conn = get_db_connection()
     try:
-        cursor = conn.cursor()
-        cursor.execute("INSERT INTO respondents (survey_id, name, dob, gender, aadhaar_number, address) VALUES (?, ?, ?, ?, ?, ?)",(survey_id, name, dob, gender, aadhaar, address))
-        conn.commit()
-        return cursor.lastrowid
-    except sqlite3.IntegrityError:
-        return conn.execute("SELECT id FROM respondents WHERE aadhaar_number = ?", (aadhaar,)).fetchone()['id']
-    finally:
-        conn.close()
+        # Check if respondent already exists
+        existing = supabase.table("respondents").select("id").eq("aadhaar_number", aadhaar).execute()
+        if existing.data:
+            return existing.data[0]['id']
+        
+        # Insert new respondent
+        data = {
+            "survey_id": survey_id,
+            "name": name,
+            "dob": dob,
+            "gender": gender,
+            "aadhaar_number": aadhaar,
+            "address": address
+        }
+        response = supabase.table("respondents").insert(data).execute()
+        return response.data[0]['id']
+    except Exception as e:
+        print(f"Error adding respondent: {e}")
+        return None
 
 def save_answers(respondent_id, answers_dict):
-    conn = get_db_connection()
-    for question, answer in answers_dict.items():
-        conn.execute("INSERT INTO answers (respondent_id, question, answer) VALUES (?, ?, ?)",(respondent_id, question, str(answer)))
-    conn.commit()
-    conn.close()
+    try:
+        data = [
+            {
+                "respondent_id": respondent_id,
+                "question": question,
+                "answer": str(answer)
+            }
+            for question, answer in answers_dict.items()
+        ]
+        supabase.table("answers").insert(data).execute()
+    except Exception as e:
+        print(f"Error saving answers: {e}")
 
 def get_survey_results(survey_id):
     """
     Fetches all results from the database (from both app and web forms)
     and returns a single, combined DataFrame.
     """
-    conn = get_db_connection()
     try:
         # 1. Get all respondents for this survey
-        respondents_df = pd.read_sql_query(f"SELECT * FROM respondents WHERE survey_id = {survey_id}", conn)
-        if respondents_df.empty:
+        respondents_response = supabase.table("respondents").select("*").eq("survey_id", survey_id).execute()
+        if not respondents_response.data:
             return pd.DataFrame()
-
-        # 2. Get all answers for these respondents
-        respondent_ids = tuple(respondents_df['id'].tolist())
         
-        # --- FIX: Correctly format the tuple for the SQL IN clause ---
-        if len(respondent_ids) == 1:
-            # For a single ID, create a string like '(1)' instead of '(1,)'
-            respondent_ids_sql = f"({respondent_ids[0]})"
-        else:
-            respondent_ids_sql = str(respondent_ids)
-
-        answers_df = pd.read_sql_query(f"SELECT * FROM answers WHERE respondent_id IN {respondent_ids_sql}", conn)
+        respondents_df = pd.DataFrame(respondents_response.data)
+        respondent_ids = respondents_df['id'].tolist()
+        
+        # 2. Get all answers for these respondents
+        answers_response = supabase.table("answers").select("*").in_("respondent_id", respondent_ids).execute()
+        
+        if not answers_response.data:
+            return respondents_df
+        
+        answers_df = pd.DataFrame(answers_response.data)
         
         # 3. Pivot the answers from long to wide format
-        if not answers_df.empty:
-            pivoted_answers_df = answers_df.pivot(index='respondent_id', columns='question', values='answer').reset_index()
-            # 4. Merge respondent data with their answers
-            results_df = pd.merge(respondents_df, pivoted_answers_df, left_on='id', right_on='respondent_id', how='left')
-            return results_df
-        else:
-            return respondents_df # Return just respondent data if no answers are logged yet
-    finally:
-        conn.close()
+        pivoted_answers_df = answers_df.pivot(index='respondent_id', columns='question', values='answer').reset_index()
+        
+        # 4. Merge respondent data with their answers
+        results_df = pd.merge(respondents_df, pivoted_answers_df, left_on='id', right_on='respondent_id', how='left')
+        return results_df
+    except Exception as e:
+        print(f"Error getting survey results: {e}")
+        return pd.DataFrame()
 
 
 # --- 2. CORE BACKEND FUNCTIONS ---
@@ -549,11 +564,16 @@ def render_dashboard(t):
     
     st.markdown("---")
     
-    conn = get_db_connection()
-    total_surveys = conn.execute("SELECT COUNT(*) FROM surveys").fetchone()[0]
-    total_users = conn.execute("SELECT COUNT(*) FROM users WHERE role = 'Enumerator'").fetchone()[0]
-    completed_respondents = conn.execute("SELECT COUNT(*) FROM respondents").fetchone()[0]
-    conn.close()
+    # Get metrics from Supabase
+    try:
+        total_surveys = supabase.table("surveys").select("id", count="exact").execute().count
+        total_users = supabase.table("users").select("id", count="exact").eq("role", "Enumerator").execute().count
+        completed_respondents = supabase.table("respondents").select("id", count="exact").execute().count
+    except:
+        total_surveys = 0
+        total_users = 0
+        completed_respondents = 0
+    
     col1, col2, col3 = st.columns(3)
     col1.metric(t['metric_total_surveys'], total_surveys)
     col2.metric(t['metric_registered_enumerators'], total_users)
@@ -704,9 +724,23 @@ def render_survey_management(t):
                 if st.button("🔗 Share Form", key=f"share_{selected_id}"):
                     html_path = generate_html_form(survey_details)
                     if html_path:
-                        webbrowser.open(f"file://{os.path.abspath(html_path)}")
-                        st.success("Shareable form generated and opened in a new browser tab.")
-                        st.info("Please ensure the `api.py` server is running in a separate terminal for submissions to work.")
+                        # Read the HTML file content
+                        with open(html_path, 'r', encoding='utf-8') as f:
+                            html_content = f.read()
+                        
+                        # Show download button
+                        st.download_button(
+                            label="⬇️ Download Survey Form",
+                            data=html_content,
+                            file_name=f"survey_{selected_id}_form.html",
+                            mime="text/html",
+                            help="Download and share this HTML file"
+                        )
+                        
+                        # Display instructions
+                        st.success("✅ Shareable form generated!")
+                        st.info("📋 **How to use:**\n1. Download the HTML form\n2. Share the file with respondents\n3. Respondents can open it in any browser\n4. Responses will be saved to the database automatically")
+                        st.warning("⚠️ **Important:** Make sure the API server is running at https://vivek45537-kartavya.hf.space")
 
             with col3:
                 if st.button("🗑️ Delete", key=f"delete_{selected_id}"):
