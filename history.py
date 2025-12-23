@@ -97,8 +97,12 @@ TRANSLATIONS = load_translations()
 
 # --- OLLAMA HELPER FUNCTIONS FOR OFFLINE MODE ---
 
-def query_ollama(prompt, model_name="gemma2"):
+def query_ollama(prompt, model_name=None):
     """Query Ollama API for offline mode."""
+    # Use selected model from session state, fallback to gemma3:latest
+    if model_name is None:
+        model_name = st.session_state.get('ollama_model', 'gemma3:latest')
+    
     try:
         response = requests.post(
             OLLAMA_API_URL,
@@ -115,7 +119,7 @@ def query_ollama(prompt, model_name="gemma2"):
             st.error(f"Ollama API error: {response.status_code}")
             return None
     except requests.exceptions.ConnectionError:
-        st.error("Cannot connect to Ollama. Please ensure Ollama is running with 'ollama serve' and the model 'gemma2' is installed.")
+        st.error(f"Cannot connect to Ollama. Please ensure Ollama is running with 'ollama serve' and the model '{model_name}' is installed.")
         return None
     except Exception as e:
         st.error(f"Ollama query error: {e}")
@@ -554,6 +558,116 @@ def render_login_page():
 def render_dashboard(t):
     st.title(f"🏠 {t['nav_dashboard']}")
     st.markdown(t['dashboard_welcome'])
+    
+    # LLM Mode Selection (Admin Only)
+    if st.session_state.get('role') == 'admin':
+        st.markdown("""
+        <style>
+        .mode-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .mode-title {
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .mode-status {
+            color: #ffd700;
+            font-size: 14px;
+            text-align: center;
+            margin-top: 10px;
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .stButton button {
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        .stButton button:hover {
+            transform: scale(1.05);
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        # LLM Mode Toggle
+        st.markdown('<div class="mode-container">', unsafe_allow_html=True)
+        st.markdown('<div class="mode-title">🤖 AI Mode Selection</div>', unsafe_allow_html=True)
+        
+        col_mode1, col_mode2 = st.columns(2)
+        
+        current_mode = st.session_state.get('llm_mode', 'online')
+        
+        with col_mode1:
+            if st.button("🌐 Online (Gemini)", 
+                        type="primary" if current_mode == 'online' else "secondary",
+                        use_container_width=True):
+                st.session_state.llm_mode = 'online'
+                os.environ['LLM_MODE'] = 'online'
+                st.success("✅ Switched to Online Mode (Gemini API)")
+                time.sleep(0.5)
+                st.rerun()
+        
+        with col_mode2:
+            if st.button("🔒 Offline & Secure (Ollama)", 
+                        type="primary" if current_mode == 'offline' else "secondary",
+                        use_container_width=True):
+                st.session_state.llm_mode = 'offline'
+                os.environ['LLM_MODE'] = 'offline'
+                st.success("✅ Switched to Offline & Secure Mode (Ollama)")
+                time.sleep(0.5)
+                st.rerun()
+        
+        # Model selection for offline mode
+        if current_mode == 'offline':
+            st.markdown("### 🎯 Select Ollama Model")
+            available_models = [
+                "gemma3:latest",
+                "gemma3:12b",
+                "gemma3:27b",
+                "llama3.1:latest",
+                "llama3:latest",
+                "deepseek-r1:latest",
+                "mistral:latest",
+                "command-r7b:latest",
+                "tinyllama:1.1b",
+                "wizardcoder:latest",
+                "deepseek-coder:latest",
+                "gemma3n:latest",
+                "embeddinggemma:latest"
+            ]
+            
+            # Initialize selected model if not exists
+            if 'ollama_model' not in st.session_state:
+                st.session_state.ollama_model = 'gemma3:latest'
+            
+            selected_model = st.selectbox(
+                "Choose your model:",
+                options=available_models,
+                index=available_models.index(st.session_state.ollama_model),
+                key="model_selector"
+            )
+            
+            if selected_model != st.session_state.ollama_model:
+                st.session_state.ollama_model = selected_model
+                os.environ['OLLAMA_MODEL'] = selected_model
+                st.success(f"✅ Model changed to: {selected_model}")
+                st.rerun()
+        
+        # Display current mode status with animation
+        mode_emoji = "🌐" if current_mode == 'online' else "🔒"
+        mode_text = "Online (Gemini API)" if current_mode == 'online' else f"Offline & Secure ({st.session_state.get('ollama_model', 'gemma3:latest')})"
+        st.markdown(f'<div class="mode-status">{mode_emoji} Current Mode: {mode_text}</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        st.markdown("---")
     
     try:
         # Count surveys
