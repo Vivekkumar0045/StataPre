@@ -1,0 +1,16 @@
+{
+    "admins": [
+        {
+            "username": "admin",
+            "password_hash": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3"
+        },
+        {
+            "username": "admin user",
+            "password_hash": "87c7965a1cc6c11a653b210aaef95e381b95afddf1781da3fa5b2d4b1d3097bf"
+        },
+        {
+            "username": "developer",
+            "password_hash": "307785cc1c419c20304cf9da3f7dd22d722f628be92dfc3970bd1dd7c9165043"
+        }
+    ]
+}

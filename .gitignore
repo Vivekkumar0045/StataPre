@@ -1,0 +1,41 @@
+# Environment variables
+.env
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Uploads and temporary files
+uploads/*
+temp_audio/*
+tts_cache/*
+
+# Keep directory structure
+!uploads/.gitkeep
+!temp_audio/.gitkeep
+!tts_cache/.gitkeep
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log

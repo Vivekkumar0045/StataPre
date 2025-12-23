@@ -1,0 +1,486 @@
+{
+  "level_based": {
+    "Central": {
+      "description": "Data aggregated at the national level, representing the entire country. Often used for macroeconomic indicators, national policy making, and international reporting.",
+      "data_variables": [
+        "gdp_current_usd",
+        "gdp_growth_annual_percent",
+        "inflation_consumer_prices_annual_percent",
+        "population_total",
+        "literacy_rate_total",
+        "labour_force_participation_rate_total",
+        "unemployment_rate_total",
+        "index_of_industrial_production_iip",
+        "poverty_headcount_ratio_national",
+        "foreign_direct_investment_net_inflows",
+        "carbon_dioxide_emissions_total"
+      ]
+    },
+    "State": {
+      "description": "Data aggregated at the level of individual States and Union Territories. Crucial for state-level policy making, resource allocation, and comparative analysis.",
+      "data_variables": [
+        "state_gdp_gsdp",
+        "state_population_total",
+        "state_sex_ratio",
+        "state_literacy_rate",
+        "state_infant_mortality_rate",
+        "state_maternal_mortality_ratio",
+        "state_gross_enrolment_ratio_education",
+        "state_worker_population_ratio",
+        "state_forest_area_percent"
+      ]
+    },
+    "Union Territory": {
+      "description": "Data aggregated for Union Territories, which are administered directly by the Central Government. Data collection is often integrated with state-level surveys.",
+      "data_variables": [
+        "ut_population_total",
+        "ut_sex_ratio",
+        "ut_literacy_rate",
+        "ut_urbanization_level",
+        "ut_access_to_electricity_percent"
+      ]
+    },
+    "District": {
+      "description": "A key administrative unit for program implementation and local governance. District-level data has become increasingly available and is vital for granular analysis and targeted interventions.",
+      "data_variables": [
+        "district_population_by_sex",
+        "district_sc_st_population",
+        "district_literacy_rate_by_sex",
+        "district_number_of_households",
+        "district_total_fertility_rate",
+        "district_percentage_children_stunted",
+        "district_percentage_women_anemic",
+        "district_pupil_teacher_ratio",
+        "district_number_of_primary_health_centres"
+      ]
+    },
+    "Urban Local Body": {
+      "description": "Data pertaining to statutory towns and cities, managed by municipal corporations, councils, or committees. This level is critical for urban planning and management.",
+      "data_variables": [
+        "town_name",
+        "town_code",
+        "town_population_2011",
+        "town_area_sq_km",
+        "town_civic_status",
+        "population_growth_rate",
+        "road_length_km",
+        "number_of_latrines",
+        "water_supply_source",
+        "fire_fighting_service_availability",
+        "number_of_banks"
+      ]
+    },
+    "Village": {
+      "description": "The lowest administrative unit in rural India. Data at this level provides insights into rural infrastructure, amenities, and land use.",
+      "data_variables": [
+        "panchayat_name",
+        "block_name",
+        "district_name",
+        "state_name",
+        "village_area_hectares",
+        "total_households",
+        "total_population_by_sex",
+        "sc_st_population",
+        "literate_population_by_sex",
+        "availability_of_school",
+        "availability_of_medical_facility",
+        "availability_of_drinking_water",
+        "power_supply_availability",
+        "post_office_availability",
+        "land_use_pattern_irrigated_unirrigated"
+      ]
+    }
+  },
+  "methodology_based": {
+    "Census": {
+      "description": "A complete enumeration of every unit (household, person, or enterprise) in the defined population. Provides a comprehensive frame but with limited depth on any single topic. Examples: Population Census, Economic Census.",
+      "data_variables": [
+        "household_number",
+        "name",
+        "relationship_to_head",
+        "sex",
+        "age",
+        "marital_status",
+        "religion",
+        "caste_status_sc_st",
+        "disability_status",
+        "mother_tongue",
+        "literacy_status",
+        "occupation",
+        "main_source_of_drinking_water",
+        "ownership_of_house",
+        "availability_of_latrine",
+        "fuel_used_for_cooking",
+        "ownership_of_assets_radio_tv_phone_vehicle"
+      ]
+    },
+    "Sample": {
+      "description": "An in-depth survey of a scientifically selected subset of the population. Allows for detailed data collection on specific topics that would be infeasible in a census. Examples: NSS, NFHS, PLFS.",
+      "data_variables": [
+        "household_monthly_consumption_expenditure_mpce",
+        "item_wise_food_consumption_quantity_value",
+        "item_wise_non_food_expenditure",
+        "employment_status_usual_current_weekly",
+        "industry_of_work_nic_code",
+        "nature_of_employment_formal_informal",
+        "wages_earned",
+        "total_fertility_rate_tfr",
+        "contraceptive_prevalence_rate_cpr",
+        "anemia_prevalence_in_women_children",
+        "domestic_violence_experience",
+        "time_spent_on_paid_work",
+        "time_spent_on_unpaid_domestic_work"
+      ]
+    },
+    "Administrative": {
+      "description": "Data collected as a by-product of the day-to-day operations of government departments and regulatory bodies. Can provide high-frequency and granular data but may be subject to reporting biases or incomplete coverage.",
+      "data_variables": [
+        "births_registered",
+        "deaths_registered",
+        "infant_deaths_registered",
+        "maternal_deaths_reported_in_hmis",
+        "institutional_deliveries",
+        "school_enrolment_by_grade",
+        "pupil_teacher_ratio_ptr",
+        "bank_deposits",
+        "bank_credit_disbursed",
+        "direct_tax_collections",
+        "number_of_gst_filers",
+        "reported_cognizable_crimes"
+      ]
+    }
+  },
+  "purpose_based": {
+    "Regulatory": {
+      "description": "Data used for compliance, enforcement, and oversight by regulatory bodies.",
+      "data_variables": [
+        "capital_adequacy_ratio_banks",
+        "non_performing_assets_npa",
+        "telecom_subscriber_base",
+        "air_quality_index_aqi",
+        "industrial_effluent_levels"
+      ]
+    },
+    "Policy Planning": {
+      "description": "Data that informs the design of new government programs, schemes, and national strategies.",
+      "data_variables": [
+        "poverty_rate",
+        "unemployment_rate",
+        "malnutrition_levels",
+        "literacy_levels",
+        "access_to_sanitation",
+        "landholding_size_distribution",
+        "household_income_sources"
+      ]
+    },
+    "Monitoring & Evaluation": {
+      "description": "Data used to track the progress and impact of ongoing schemes and policies.",
+      "data_variables": [
+        "institutional_delivery_rate",
+        "vaccination_coverage",
+        "gross_enrolment_ratio",
+        "dropout_rate",
+        "toilet_construction_progress",
+        "number_of_health_insurance_claims"
+      ]
+    },
+    "Research & Academic": {
+      "description": "Unit-level microdata released for in-depth academic analysis, often used to study causal relationships and socio-economic dynamics.",
+      "data_variables": [
+        "all_unit_level_microdata",
+        "household_id",
+        "person_id",
+        "sampling_weights",
+        "strata_information",
+        "panel_data_identifiers_plfs_ihds"
+      ]
+    }
+  },
+  "sectoral": {
+    "Agriculture": {
+      "description": "Data related to land use, crop production, livestock, and the economic condition of agricultural households.",
+      "data_variables": [
+        "land_holding_size",
+        "tenancy_status",
+        "crop_area_sown",
+        "crop_production_quantity",
+        "irrigation_source",
+        "use_of_fertilizers_pesticides",
+        "livestock_ownership_by_type",
+        "income_from_farming",
+        "income_from_wages",
+        "household_debt_and_investment",
+        "cost_of_cultivation"
+      ]
+    },
+    "Health & Nutrition": {
+      "description": "Data on population health, family welfare, reproductive health, child health, and nutritional status. Primarily sourced from the National Family Health Survey (NFHS).",
+      "data_variables": {
+        "Fertility": [
+          "total_fertility_rate_tfr",
+          "age_specific_fertility_rate",
+          "contraceptive_prevalence_rate_any_method",
+          "unmet_need_for_family_planning"
+        ],
+        "Maternal_Health": [
+          "antenatal_care_anc_visits",
+          "skilled_birth_attendant_at_delivery",
+          "institutional_births",
+          "maternal_mortality_ratio_mmr"
+        ],
+        "Child_Health": [
+          "infant_mortality_rate_imr",
+          "under_five_mortality_rate_u5mr",
+          "childhood_vaccination_coverage_dpt_polio_bcg",
+          "prevalence_of_diarrhea_ari",
+          "low_birth_weight_percent"
+        ],
+        "Nutrition": [
+          "children_under_5_stunted_wasted_underweight",
+          "prevalence_of_anemia_in_children",
+          "prevalence_of_anemia_in_women",
+          "exclusive_breastfeeding_rate"
+        ],
+        "Women_Empowerment_Health_Context": [
+          "experience_of_domestic_violence_physical_sexual",
+          "women_participating_in_household_decisions",
+          "women_with_bank_account",
+          "hygienic_menstrual_practices"
+        ]
+      }
+    },
+    "Education": {
+      "description": "Data on school infrastructure, teachers, and student enrolment, primarily from the UDISE+ system.",
+      "data_variables": {
+        "School_Infrastructure": [
+          "udise_code",
+          "school_category_primary_upperprimary",
+          "number_of_classrooms",
+          "availability_of_drinking_water",
+          "availability_of_functional_toilets_boys_girls",
+          "availability_of_playground",
+          "availability_of_computer_lab",
+          "internet_connectivity"
+        ],
+        "Student_Enrolment": [
+          "grade_wise_enrolment_by_gender",
+          "enrolment_of_cwsn_children_with_special_needs",
+          "social_category_enrolment_sc_st_obc",
+          "gross_enrolment_ratio_ger",
+          "net_enrolment_ratio_ner",
+          "dropout_rate",
+          "transition_rate"
+        ],
+        "Teachers": [
+          "number_of_teachers_by_gender",
+          "teacher_qualifications_academic_professional",
+          "pupil_teacher_ratio_ptr",
+          "teachers_received_in_service_training"
+        ]
+      }
+    },
+    "Labour": {
+      "description": "Data concerning the labour force, employment, unemployment, and working conditions.",
+      "data_variables": [
+        "labour_force_participation_rate_lfpr",
+        "worker_population_ratio_wpr",
+        "unemployment_rate_ur",
+        "activity_status_usual_ps_ss",
+        "activity_status_current_weekly_cws",
+        "distribution_of_workers_by_industry_nic",
+        "distribution_of_workers_by_employment_type_self_employed_regular_wage_casual",
+        "female_labour_force_participation_rate"
+      ]
+    },
+    "Industry": {
+      "description": "Data on the performance, structure, and characteristics of the industrial sector, particularly organized manufacturing.",
+      "data_variables": [
+        "number_of_factories",
+        "fixed_capital",
+        "working_capital",
+        "total_persons_engaged",
+        "wages_to_workers",
+        "total_input",
+        "total_output",
+        "gross_value_added_gva",
+        "net_value_added_nva"
+      ]
+    },
+    "Housing": {
+      "description": "Data on housing stock, household amenities, and living conditions.",
+      "data_variables": [
+        "predominant_material_of_floor_wall_roof",
+        "condition_of_census_house",
+        "household_ownership_status_owned_rented",
+        "number_of_dwelling_rooms",
+        "main_source_of_drinking_water",
+        "availability_of_latrine_within_premises",
+        "type_of_latrine_facility",
+        "waste_water_outlet_connection",
+        "main_source_of_lighting",
+        "fuel_used_for_cooking"
+      ]
+    },
+    "Social Welfare": {
+      "description": "Data related to the status and welfare of specific demographic groups, including Scheduled Castes (SCs), Scheduled Tribes (STs), persons with disabilities, and the elderly.",
+      "data_variables": [
+        "sc_population",
+        "st_population",
+        "prevalence_of_disability_by_type",
+        "socio_economic_status_of_disabled",
+        "household_deprivation_score_secc",
+        "social_security_pension_receipt",
+        "health_status_of_elderly",
+        "economic_status_of_elderly"
+      ]
+    },
+    "Environment": {
+      "description": "Data concerning forest cover, biodiversity, pollution levels, and climate change indicators.",
+      "data_variables": [
+        "forest_cover_percent_of_geographical_area",
+        "tree_cover_percent",
+        "mangrove_cover",
+        "carbon_stock_in_forests",
+        "air_quality_index_aqi_cities",
+        "water_quality_monitoring_river_basins",
+        "greenhouse_gas_ghg_emission_inventory"
+      ]
+    }
+  },
+  "geographical": {
+    "Topographical": {
+      "description": "Data related to the physical features and elevation of the Earth's surface, produced by the Survey of India (SoI).",
+      "data_variables": [
+        "map_sheet_number",
+        "scale_1_50k_1_250k",
+        "contour_lines",
+        "elevation_points_spot_heights",
+        "rivers_and_water_bodies",
+        "road_network",
+        "railway_lines",
+        "administrative_boundaries",
+        "place_names_toponymy"
+      ]
+    },
+    "Geological": {
+      "description": "Data on the Earth's structure, materials, and processes, including mineral resources. Produced by the Geological Survey of India (GSI).",
+      "data_variables": [
+        "geological_formation_name",
+        "lithology_rock_type",
+        "stratigraphy",
+        "mineral_commodity_location",
+        "fault_lines",
+        "earthquake_epicenters",
+        "bouguer_gravity_contours"
+      ]
+    },
+    "Archaeological": {
+      "description": "Data related to the location, preservation, and study of ancient monuments and archaeological sites, managed by the Archaeological Survey of India (ASI).",
+      "data_variables": [
+        "monument_name",
+        "location_of_monument",
+        "type_of_monument",
+        "period_of_construction",
+        "state_of_preservation",
+        "details_of_excavations",
+        "list_of_protected_monuments"
+      ]
+    },
+    "Botanical & Zoological": {
+      "description": "Data on the flora and fauna of India, including their distribution, taxonomy, and conservation status, compiled by the Botanical Survey of India (BSI) and Zoological Survey of India (ZSI).",
+      "data_variables": [
+        "plant_species_name_botanical",
+        "plant_family_genus",
+        "floristic_survey_data",
+        "distribution_maps_of_flora",
+        "ethnobotanical_information",
+        "animal_species_name_zoological",
+        "animal_taxonomy_and_systematics",
+        "faunal_diversity_records",
+        "status_of_threatened_species_red_list"
+      ]
+    }
+  },
+  "frequency_based": {
+    "Decennial": {
+      "description": "Conducted once every ten years. Provides a comprehensive baseline but is infrequent.",
+      "source_surveys": [
+        "Census of India",
+        "Agriculture Census"
+      ],
+      "data_variables": [
+        "population_count",
+        "demographic_characteristics",
+        "housing_stock_and_amenities",
+        "number_of_operational_holdings"
+      ]
+    },
+    "Quinquennial": {
+      "description": "Conducted once every five years. NSS used to have major 'thick' rounds on consumption and employment quinquennially.",
+      "data_variables": [
+        "detailed_household_consumption_expenditure",
+        "detailed_employment_and_unemployment_indicators"
+      ]
+    },
+    "Annual": {
+      "description": "Conducted or compiled once every year. Provides consistent time-series data for key indicators.",
+      "data_variables": [
+        "annual_employment_unemployment_status",
+        "industrial_sector_performance",
+        "school_enrolment_and_teacher_data",
+        "gdp_and_related_macroeconomic_aggregates"
+      ]
+    },
+    "Periodic": {
+      "description": "Conducted at regular intervals that are not annual (e.g., quarterly, bi-annually, or every few years).",
+      "data_variables": [
+        "quarterly_urban_unemployment_rate",
+        "monthly_industrial_growth",
+        "health_and_nutrition_indicators_every_3_5_years"
+      ]
+    },
+    "Ad hoc": {
+      "description": "One-time or irregularly conducted surveys on specific subjects as per policy requirements.",
+      "data_variables": [
+        "time_allocation_to_activities",
+        "household_assets_and_liabilities",
+        "prevalence_and_type_of_disability",
+        "caste_and_socio_economic_status"
+      ]
+    }
+  },
+  "data_collection_method": {
+    "Quantitative": {
+      "description": "Numerical data that can be measured and statistically analyzed. This forms the bulk of official statistics.",
+      "data_variables": [
+        "age",
+        "income",
+        "expenditure",
+        "number_of_children",
+        "literacy_rate",
+        "unemployment_rate",
+        "production_value",
+        "enrolment_count",
+        "test_scores"
+      ]
+    },
+    "Qualitative": {
+      "description": "Non-numerical, descriptive data that captures concepts, opinions, reasons, and experiences. Often collected through open-ended questions or in-depth interviews.",
+      "data_variables": [
+        "reasons_for_migration",
+        "reasons_for_not_using_contraception",
+        "perception_of_local_governance",
+        "description_of_domestic_violence_incidents",
+        "childs_experience_of_schooling",
+        "reasons_for_dropping_out_of_school"
+      ]
+    },
+    "Mixed Methods": {
+      "description": "Surveys that integrate both quantitative and qualitative data collection to provide a comprehensive understanding.",
+      "data_variables": [
+        "combination_of_all_quantitative_variables_with_qualitative_reasoning_and_perceptions",
+        "e.g., quantitative_data_on_vaccination_status_paired_with_qualitative_reasons_for_vaccine_hesitancy"
+      ]
+    }
+  }
+}
