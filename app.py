@@ -13,18 +13,25 @@ import webbrowser
 from content import HTML_TEMPLATE # Import the HTML template
 import plotly.express as px
 import google.generativeai as genai
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
 
 # Configure Google Generative AI
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-if not GOOGLE_API_KEY or GOOGLE_API_KEY == "YOUR_API_KEY_HERE":
-    st.error("Please set GOOGLE_API_KEY in your .env file")
+# Use Streamlit secrets for API key
+try:
+    GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
+except (KeyError, FileNotFoundError):
+    st.error("Please set GOOGLE_API_KEY in .streamlit/secrets.toml file")
+    st.info("Create a .streamlit/secrets.toml file with: GOOGLE_API_KEY = 'your-api-key-here'")
     st.stop()
+
+if not GOOGLE_API_KEY or GOOGLE_API_KEY == "YOUR_API_KEY_HERE":
+    st.error("Please set a valid GOOGLE_API_KEY in .streamlit/secrets.toml file")
+    st.stop()
+
 genai.configure(api_key=GOOGLE_API_KEY)
 model = genai.GenerativeModel(model_name="gemini-3-flash-preview")
+
+# Set API key in environment for child modules
+os.environ['GOOGLE_API_KEY'] = GOOGLE_API_KEY
 
 # Ollama configuration for offline mode
 OLLAMA_API_URL = "http://localhost:11434/api/generate"

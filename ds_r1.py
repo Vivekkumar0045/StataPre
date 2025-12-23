@@ -7,15 +7,12 @@ import os
 import csv
 import re
 import google.generativeai as genai
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
 
 # Configure Google Generative AI
+# Get API key from environment variable (set by app.py)
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-if not GOOGLE_API_KEY or GOOGLE_API_KEY == "YOUR_API_KEY_HERE":
-    print("ERROR: Please set GOOGLE_API_KEY in your .env file")
+if not GOOGLE_API_KEY:
+    print("ERROR: GOOGLE_API_KEY not found. Please ensure app.py is setting it from Streamlit secrets.")
     sys.exit(1)
 genai.configure(api_key=GOOGLE_API_KEY)
 model = genai.GenerativeModel(model_name="gemini-3-flash-preview")
