@@ -1,0 +1,77 @@
+[
+  {
+    "say": "Could you tell me the name of the district where you’re currently living or making your observations?",
+    "explain": "We're looking for the specific administrative district name. This information allows us to perform a regional analysis to see how effectively environmental policies are working in different areas.",
+    "question_key": "What is the name of the district where you currently reside or where your observations are being recorded?"
+  },
+  {
+    "say": "To help us understand your area better, could you tell me the name of your local Ward or Gram Panchayat?",
+    "explain": "We ask for your official local administrative unit to better understand how regional geography and local leadership play a role in the success of environmental projects in your specific area.",
+    "question_key": "What is the name of your Ward or Gram Panchayat?"
+  },
+  {
+    "say": "Would you say your current home is in an urban or a rural area?",
+    "explain": "We're asking this to help us understand how things like regional infrastructure and local geography impact the effectiveness of renewable energy and waste management policies in different settings.",
+    "question_key": "Please specify whether your current place of residence is classified as an urban or rural area."
+  },
+  {
+    "say": "To get started, could you please enter the unique identification number assigned to your household for this survey?",
+    "explain": "This unique ID is used for data tracking and ensures that each response is correctly mapped to the scientifically selected sample for monitoring and evaluation purposes.",
+    "question_key": "Please enter the unique identification number assigned to your household for this survey."
+  },
+  {
+    "say": "To help us understand you better, could you please let me know how old you are?",
+    "explain": "We ask for your age so we can group responses into demographic categories. This helps us analyze how people of different ages perceive the socio-economic impacts of environmental policies.",
+    "question_key": "Please enter your current age in years."
+  },
+  {
+    "say": "Could you please tell me your gender?",
+    "explain": "We ask this to help us better understand and analyze how different environmental policies might affect various demographic groups from a socio-economic perspective.",
+    "question_key": "What is your gender?"
+  },
+  {
+    "say": "On average, about how much does your household spend in total each month on things like groceries, bills, and other services?",
+    "explain": "Please provide the total amount spent by your household on all goods and services in a typical month. This information helps us understand the socio-economic impact of environmental policies on different spending groups.",
+    "question_key": "What is the average total monthly consumption expenditure of your household?"
+  },
+  {
+    "say": "On a scale of 1 to 10, how familiar would you say you are with the current national plastic ban? (1 means you're just hearing about it, and 10 means you know the rules inside out!)",
+    "explain": "We’re looking to understand how well the government's regulations on single-use plastics are being communicated to the public. Your rating helps us measure the reach and clarity of these policy updates.",
+    "question_key": "On a scale of 1 to 10, how would you rate your level of awareness regarding the current national plastic ban policy?"
+  },
+  {
+    "say": "Thinking about your typical week, how often do you use single-use plastic items like bags, bottles, or food packaging? Please rate this on a scale of 1 to 10, where 1 means you don't use them at all and 10 means you use them very frequently.",
+    "explain": "This question helps us evaluate the effectiveness of the national plastic ban by understanding current consumption habits. A score of 1 indicates zero usage, while a 10 indicates high-frequency daily usage.",
+    "question_key": "On a scale of 1 to 10, how frequently do you use single-use plastic items (such as bags, bottles, or food packaging) in a typical week?"
+  },
+  {
+    "say": "On average, about how much do you spend each month on biodegradable items like paper bags, compostable containers, or bamboo products? Please share the amount in Indian Rupees (INR).",
+    "explain": "We are collecting this information to help assess the socio-economic impact of the national plastic ban. It helps us understand the financial shift in consumer spending as people move toward eco-friendly substitutes.",
+    "question_key": "On average, what is your monthly expenditure on biodegradable alternatives (such as paper bags, compostable containers, or bamboo products) in Indian Rupees (INR)?"
+  },
+  {
+    "say": "To get started, what’s the main source of energy you use in your home for daily needs like cooking, heating, and lighting?",
+    "explain": "We are asking this to understand whether households are using renewable energy or more traditional fuels. This helps researchers evaluate how well national energy policies are working across different regions.",
+    "question_key": "What is the main source of energy used in your household for daily needs such as cooking, heating, and lighting?"
+  },
+  {
+    "say": "Could you tell me the total installed capacity of the rooftop solar system at this location in kilowatts (kW)?",
+    "explain": "We’re looking for the numerical capacity of your solar setup. This data helps us evaluate the success of national renewable energy policies and understand how local terrain and geography affect solar energy adoption in different regions.",
+    "question_key": "What is the total installed capacity of the rooftop solar system at this location, measured in kilowatts (kW)?"
+  },
+  {
+    "say": "Could you please tell me the total subsidy amount in INR you received under the PM-KUSUM scheme for your solar pump installation?",
+    "explain": "We are looking for the specific amount of financial support you received. This information helps us understand the economic impact of the program and evaluate how effectively the subsidies are being distributed to participants.",
+    "question_key": "Please specify the total amount of subsidy (in INR) you have availed under the PM-KUSUM scheme for the installation of solar pumps."
+  },
+  {
+    "say": "On a scale of 1 to 10, how effective do you feel our national environmental policies—like the plastic ban and renewable energy projects—have been at meeting their goals for both the environment and the economy?",
+    "explain": "We're looking to understand your perspective on how well these policies are actually working in the real world. This helps us measure if national mandates are successfully balancing environmental protection with social and economic needs.",
+    "question_key": "On a scale of 1 to 10, how effective do you perceive the current national environmental policies, such as the plastic ban and renewable energy initiatives, to be in achieving their ecological and socio-economic objectives?"
+  },
+  {
+    "say": "To start, could you please record the current date and time for me?",
+    "explain": "We collect the exact timestamp of your response to help us track and analyze how environmental policy assessments change over time.",
+    "question_key": "Please record the date and time of this survey submission."
+  }
+]

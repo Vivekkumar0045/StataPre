@@ -1,0 +1,33 @@
+{
+  "timestamp": "2025-12-23T14:02:32.227210",
+  "user_query": "Design a survey to collect feedback on government-led environmental policies (plastic ban, renewable energy).",
+  "classifications": {
+    "level_based": "Central",
+    "methodology_based": "Sample",
+    "purpose_based": "Monitoring & Evaluation",
+    "sectoral": "Environment",
+    "geographical": "Topographical",
+    "frequency_based": "Ad hoc",
+    "data_collection_method": "Mixed Methods"
+  },
+  "description": "Survey Design: Design a survey to collect feedback on government-led environmental policies (plastic ban, renewable energy). This initiative is established as a Central level assessment within the Environment sector, functioning as a critical Monitoring & Evaluation instrument to gauge the socio-economic and ecological impact of national mandates. Utilizing a scientifically selected Sample methodology, the study ensures national representation while allowing for deep-dive analysis into specific policy outcomes. To provide a comprehensive understanding of implementation challenges, the framework employs Mixed Methods, integrating quantitative data with qualitative insights. As an Ad hoc survey, it addresses immediate policy requirements, further incorporating Topographical considerations to analyze how diverse physical features and regional elevations influence the effectiveness of renewable energy infrastructure and waste management protocols. This approach facilitates robust international reporting and evidence-based refinements to national environmental strategies.",
+  "excel_headings": [
+    "District",
+    "Ward_Panchayat_Name",
+    "Urban_Rural_Classification",
+    "Household_ID",
+    "Respondent_Age",
+    "Respondent_Gender",
+    "Household_Monthly_Consumption_Expenditure_MPCE",
+    "Awareness_Score_Plastic_Ban_Policy",
+    "Weekly_Single_Use_Plastic_Consumption_Frequency",
+    "Monthly_Expenditure_on_Biodegradable_Alternatives_INR",
+    "Primary_Household_Energy_Source",
+    "Rooftop_Solar_Installed_Capacity_kW",
+    "PM_KUSUM_Solar_Pump_Subsidy_Availed_INR",
+    "Policy_Effectiveness_Perception_Rating",
+    "Survey_Timestamp"
+  ],
+  "model_used": "gemini-3-flash-preview",
+  "files": {}
+}
