@@ -5,7 +5,6 @@ import json
 from datetime import datetime
 import os
 import csv
-import pickle
 import re
 import google.generativeai as genai
 from dotenv import load_dotenv
@@ -28,10 +27,6 @@ OLLAMA_MODEL = "gemma2"
 # Load classification data from JSON
 with open("json_data/classify.json", "r", encoding="utf-8") as f:
     CLASSIFY_DATA = json.load(f)
-
-# Load filename prediction model
-with open("assets/model.pkl", "rb") as f:
-    filename_model = pickle.load(f)
 
 # UTF-8 support for Windows
 if sys.platform == "win32":
@@ -88,9 +83,10 @@ def log_prompt(prompt, model_name, purpose):
         log_file.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
 
 def generate_filename_base(user_query):
-    """Generate filename base using the prediction model"""
-    # Predict a single-word name
-    name = filename_model.predict([user_query])[0]
+    """Generate filename base from query text"""
+    # Extract first meaningful word from query
+    words = user_query.split()
+    name = words[0] if words else "survey"
     
     # Sanitize the name for filename safety
     sanitized = re.sub(r'[^a-zA-Z0-9]', '_', name)
