@@ -741,11 +741,15 @@ def render_survey_management(t):
                                 file_name = f"survey_{selected_id}_form.html"
                                 bucket_name = "survey-forms"  # You need to create this bucket in Supabase
                                 
-                                # Upload file
+                                # Upload file with proper content type so browser renders HTML
                                 supabase.storage.from_(bucket_name).upload(
                                     file_name,
                                     html_content.encode('utf-8'),
-                                    file_options={"content-type": "text/html", "upsert": "true"}
+                                    file_options={
+                                        "content-type": "text/html; charset=utf-8",
+                                        "cache-control": "3600",
+                                        "upsert": "true"
+                                    }
                                 )
                                 
                                 # Get public URL
