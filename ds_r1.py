@@ -290,6 +290,16 @@ def query_llm(prompt, model_name="gemini-3-flash-preview", purpose=""):
             raise Exception(f"Gemini API error: {str(e)}")
 
 def generate_survey_design(user_query, model_name="gemini-3-flash-preview", save_output=True):
+    # Ensure survey_responses directory exists
+    os.makedirs("survey_responses", exist_ok=True)
+    
+    # Create placeholder files immediately to ensure they exist
+    # These will be overwritten with actual content later
+    with open("survey_responses/data.txt", 'w', encoding='utf-8') as f:
+        f.write("Generating survey description...")
+    with open("survey_responses/data.csv", 'w', newline='', encoding='utf-8') as f:
+        f.write("")
+    
     # Generate filename base using the prediction model
     filename_base = generate_filename_base(user_query)
     timestamp = datetime.now().strftime("%H%M%S")
@@ -369,8 +379,9 @@ def generate_survey_design(user_query, model_name="gemini-3-flash-preview", save
             save_response(response_data, json_filename)
             response_data["files"]["json"] = json_filename
             
+            # Always create CSV file, even if headings are empty
+            csv_filename = f"survey_responses/{unique_id}.csv"
             if response_data["excel_headings"]:
-                csv_filename = f"survey_responses/{unique_id}.csv"
                 with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
                     writer = csv.writer(csvfile)
                     writer.writerow(response_data["excel_headings"])
@@ -378,6 +389,12 @@ def generate_survey_design(user_query, model_name="gemini-3-flash-preview", save
                         writer.writerow([''] * len(response_data["excel_headings"]))
                 response_data["files"]["csv"] = csv_filename
                 print(f"\nCreated CSV template: {csv_filename}")
+            else:
+                # Create empty CSV if no headings
+                with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
+                    csvfile.write("")
+                response_data["files"]["csv"] = csv_filename
+                print(f"\nCreated empty CSV template: {csv_filename}")
 
         print("\n" + "="*50)
         print(f"SURVEY DESIGN COMPLETE FOR: '{user_query}'")
@@ -388,6 +405,20 @@ def generate_survey_design(user_query, model_name="gemini-3-flash-preview", save
         error_msg = f"Error: {str(e)}"
         print(error_msg)
         response_data["error"] = error_msg
+        
+        # Ensure files are created even on error
+        try:
+            # Create data.txt with error message
+            with open("survey_responses/data.txt", 'w', encoding='utf-8') as file:
+                file.write(f"Error generating survey: {error_msg}")
+            
+            # Create data.csv with error message
+            with open("survey_responses/data.csv", 'w', newline='', encoding='utf-8') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow(["Error"])
+                writer.writerow([error_msg])
+        except Exception as file_error:
+            print(f"Failed to create error files: {str(file_error)}")
         
         # Save error information
         if save_output:
