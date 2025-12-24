@@ -14,7 +14,6 @@ import google.generativeai as genai
 from supabase import create_client, Client
 import ds_r1 , adhr
 import random 
-from typing import Optional
 
 
 
@@ -45,34 +44,6 @@ try:
 except (KeyError, FileNotFoundError):
     st.error("Please set SUPABASE_URL and SUPABASE_KEY in .streamlit/secrets.toml file")
     st.stop()
-
-# Storage buckets for survey JSONs and conversational scripts
-SURVEY_JSON_BUCKET = st.secrets.get("SURVEY_JSON_BUCKET", "survey-jsons")
-SCRIPT_JSON_BUCKET = st.secrets.get("SCRIPT_JSON_BUCKET", "survey-scripts")
-SURVEY_FORMS_BUCKET = st.secrets.get("SURVEY_FORMS_BUCKET", "surveyforms")
-
-
-def upload_to_storage(bucket_name: str, file_name: str, file_bytes: bytes, content_type: str = "application/json"):
-    """Upload a file to Supabase Storage and return its public URL."""
-    try:
-        storage = supabase.storage.from_(bucket_name)
-        try:
-            storage.remove([file_name])
-        except Exception:
-            pass  # Ignore if the file does not exist yet
-
-        storage.upload(
-            path=file_name,
-            file=file_bytes,
-            file_options={
-                "content-type": content_type,
-                "cache-control": "3600"
-            }
-        )
-        return storage.get_public_url(file_name)
-    except Exception as e:
-        st.warning(f"Could not upload {file_name} to bucket '{bucket_name}': {e}")
-        return None
 
 # Ollama configuration for offline mode
 OLLAMA_API_URL = "http://localhost:11434/api/generate"
@@ -231,7 +202,7 @@ def load_config():
 def init_db():
     """    Initializes the database tables in Supabase.
     Tables should be created in Supabase dashboard with the following schema:
-    - surveys: id (int8, PK), title (text), description (text), status (text), json_path (text), json_url (text), script_url (text), created_at (timestamp)
+    - surveys: id (int8, PK), title (text), description (text), status (text), json_path (text), created_at (timestamp)
     - users: id (int8, PK), name (text), username (text, unique), password (text), role (text), language (text), contact (text), created_at (timestamp)
     - respondents: id (int8, PK), survey_id (int8), name (text), dob (text), gender (text), aadhaar_number (text, unique), address (text), created_at (timestamp), start_time (text), end_time (text), device_info (text), geo_latitude (text), geo_longitude (text), ip_address (text), ip_city (text), ip_country (text)
     - answers: id (int8, PK), respondent_id (int8), question (text), answer (text), created_at (timestamp)
@@ -266,16 +237,14 @@ def get_user(username):
         print(f"Error getting user: {e}")
         return None
 
-def add_survey(title, description, status, json_path, json_url=None, script_url=None):
+def add_survey(title, description, status, json_path):
     """Adds a new survey to the database and returns its ID."""
     try:
         data = {
             "title": title,
             "description": description,
             "status": status,
-            "json_path": json_path,
-            "json_url": json_url,
-            "script_url": script_url
+            "json_path": json_path
         }
         response = supabase.table("surveys").insert(data).execute()
         if response.data:
@@ -432,18 +401,9 @@ def create_survey_json_iteratively(survey_name: str):
 
     progress_bar.empty()
     json_path = os.path.join("survey_jsons", f"{survey_name}.json")
-    json_string = json.dumps(survey_questions, indent=2, ensure_ascii=False)
     with open(json_path, "w", encoding='utf-8') as f:
-        f.write(json_string)
-
-    json_public_url = upload_to_storage(
-        bucket_name=SURVEY_JSON_BUCKET,
-        file_name=f"{survey_name}.json",
-        file_bytes=json_string.encode("utf-8"),
-        content_type="application/json"
-    )
-
-    return json_path, survey_description, json_public_url
+        json.dump(survey_questions, f, indent=2, ensure_ascii=False)
+    return json_path, survey_description
 
 def create_conversational_script(survey_id, survey_name):
     """Generates a conversational script and saves it using the survey ID."""
@@ -498,48 +458,10 @@ def create_conversational_script(survey_id, survey_name):
             })
 
     progress_bar.empty()
-    script_json_string = json.dumps(script, indent=2, ensure_ascii=False)
     with open(script_json_path, "w", encoding='utf-8') as f:
-        f.write(script_json_string)
+        json.dump(script, f, indent=2, ensure_ascii=False)
 
-    script_public_url = upload_to_storage(
-        bucket_name=SCRIPT_JSON_BUCKET,
-        file_name=f"script_{survey_id}.json",
-        file_bytes=script_json_string.encode("utf-8"),
-        content_type="application/json"
-    )
-
-    surveyforms_script_url = upload_to_storage(
-        bucket_name=SURVEY_FORMS_BUCKET,
-        file_name=f"{survey_id}_convojson",
-        file_bytes=script_json_string.encode("utf-8"),
-        content_type="application/json"
-    )
-
-    if surveyforms_script_url:
-        script_public_url = surveyforms_script_url
-
-    return script_json_path, script, script_public_url
-
-
-def load_survey_questions(json_path: str, json_url: str | None = None):
-    """Load survey questions from a local file first, then fall back to a storage URL."""
-    if json_path and os.path.exists(json_path):
-        try:
-            with open(json_path, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except Exception as e:
-            st.warning(f"Could not read local survey JSON: {e}")
-
-    if json_url:
-        try:
-            response = requests.get(json_url, timeout=30)
-            response.raise_for_status()
-            return response.json()
-        except Exception as e:
-            st.error(f"Could not fetch survey JSON from storage: {e}")
-
-    return None
+    return script_json_path, script
 
 # --- Shareable Form Generation (HTML Only) ---
 def generate_html_form(survey_details):
@@ -551,9 +473,11 @@ def generate_html_form(survey_details):
     os.makedirs(form_dir, exist_ok=True)
     html_path = os.path.join(form_dir, "form.html")
 
-    survey_questions = load_survey_questions(json_path, survey_details.get('json_url'))
-    if not survey_questions:
-        st.error("Could not read survey JSON from local file or storage.")
+    try:
+        with open(json_path, 'r', encoding='utf-8') as f:
+            survey_questions = json.load(f)
+    except Exception as e:
+        st.error(f"Could not read survey JSON: {e}")
         return None
 
     html_content = HTML_TEMPLATE.format(
@@ -914,7 +838,7 @@ def render_survey_management(t):
             survey_name = st.session_state.survey_name
             final_df.to_csv(f"survey_responses/{survey_name}.csv", index=False)
             with st.spinner("Building survey questions with AI..."):
-                json_path, description, json_url = create_survey_json_iteratively(survey_name)
+                json_path, description = create_survey_json_iteratively(survey_name)
 
             if json_path:
                 with st.spinner("Saving initial survey draft..."):
@@ -922,33 +846,10 @@ def render_survey_management(t):
                         title=st.session_state.query.split('.')[0],
                         description=description,
                         status='Draft',
-                        json_path=json_path,
-                        json_url=json_url
+                        json_path=json_path
                     )
-                if new_survey_id:
-                    try:
-                        with open(json_path, "r", encoding="utf-8") as jf:
-                            question_bytes = jf.read().encode("utf-8")
-
-                        surveyforms_json_url = upload_to_storage(
-                            bucket_name=SURVEY_FORMS_BUCKET,
-                            file_name=f"{new_survey_id}_json",
-                            file_bytes=question_bytes,
-                            content_type="application/json"
-                        )
-
-                        if surveyforms_json_url:
-                            json_url = surveyforms_json_url
-                            try:
-                                supabase.table("surveys").update({"json_url": surveyforms_json_url}).eq("id", new_survey_id).execute()
-                            except Exception as e:
-                                st.warning(f"JSON uploaded to surveyforms but URL not saved to DB: {e}")
-                    except Exception as e:
-                        st.warning(f"Could not upload survey JSON to surveyforms bucket: {e}")
-
                 st.session_state.survey_id = new_survey_id
                 st.session_state.json_path = json_path
-                st.session_state.json_url = json_url
                 st.session_state.description = description
                 st.session_state.csv_editing_stage = False
                 st.session_state.question_review_stage = True
@@ -958,11 +859,8 @@ def render_survey_management(t):
     elif st.session_state.get('question_review_stage', False):
         st.subheader(f"Step 3: Review Questions for Survey ID: {st.session_state.survey_id}")
         json_path = st.session_state.json_path
-        questions = load_survey_questions(json_path, st.session_state.get('json_url'))
-
-        if not questions:
-            st.error("No survey questions found. Please regenerate the survey.")
-            return
+        with open(json_path, 'r', encoding='utf-8') as f:
+            questions = json.load(f)
 
         col1, col2 = st.columns(2)
         with col1:
@@ -978,7 +876,7 @@ def render_survey_management(t):
             if 'script_data' not in st.session_state:
                 if st.button("Generate Conversational Script"):
                     with st.spinner("Generating script... this may take a moment."):
-                        script_path, script_data, script_url = create_conversational_script(
+                        script_path, script_data = create_conversational_script(
                             survey_id=st.session_state.survey_id,
                             survey_name=st.session_state.survey_name
                         )
@@ -986,13 +884,6 @@ def render_survey_management(t):
                             # Script saved locally in survey_scripts folder
                             st.session_state.script_path = script_path
                             st.session_state.script_data = script_data
-                            st.session_state.script_url = script_url
-
-                            if script_url:
-                                try:
-                                    supabase.table("surveys").update({"script_url": script_url}).eq("id", st.session_state.survey_id).execute()
-                                except Exception as e:
-                                    st.warning(f"Script uploaded but URL not saved to DB: {e}")
                             st.success(f"Script saved to {script_path}")
                             st.rerun()
             else:
@@ -1006,7 +897,7 @@ def render_survey_management(t):
         st.subheader("Finalize Survey")
         if st.button("✅ Finish and Return to List", type="primary"):
             st.success("🎉 Survey creation process complete!")
-            for key in ['csv_editing_stage', 'editable_df', 'survey_name', 'query', 'question_review_stage', 'json_path', 'json_url', 'description', 'script_path', 'script_data', 'script_url', 'survey_id']:
+            for key in ['csv_editing_stage', 'editable_df', 'survey_name', 'query', 'question_review_stage', 'json_path', 'description', 'script_path', 'script_data', 'survey_id']:
                 if key in st.session_state:
                     del st.session_state[key]
             st.rerun()
@@ -1120,24 +1011,14 @@ def render_survey_management(t):
                         st.rerun()
                 with col4:
                     survey_details = df_surveys[df_surveys['id'] == selected_id].iloc[0]
-                    json_url = survey_details.get('json_url') if hasattr(survey_details, "get") else None
-                    questions = load_survey_questions(
-                        survey_details['json_path'],
-                        json_url
-                    )
-
-                    if questions:
-                        download_payload = json.dumps(questions, ensure_ascii=False, indent=2)
-                        file_name = os.path.basename(str(survey_details['json_path'])) or f"survey_{selected_id}.json"
+                    with open(survey_details['json_path']) as f:
                         st.download_button(
                             label="⬇️ Download JSON",
-                            data=download_payload,
-                            file_name=file_name,
+                            data=f.read(),
+                            file_name=os.path.basename(survey_details['json_path']),
                             mime='application/json',
                             key=f"json_{selected_id}"
                         )
-                    else:
-                        st.error("Survey JSON not available for download.")
         else:
             st.info("No surveys found.")
 
@@ -1554,8 +1435,8 @@ def logout():
     keys_to_clear = [
         'logged_in', 'role', 'username', 'language',
         'csv_editing_stage', 'editable_df', 'survey_name', 'query',
-        'question_review_stage', 'json_path', 'json_url', 'description',
-        'script_path', 'script_data', 'script_url', 'survey_id'
+        'question_review_stage', 'json_path', 'description',
+        'script_path', 'script_data', 'survey_id'
     ]
     for key in keys_to_clear:
         if key in st.session_state:

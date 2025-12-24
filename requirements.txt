@@ -20,10 +20,5 @@ Pillow>=10.0.0
 # HTTP Requests
 requests>=2.31.0
 
-# Audio Processing
-sounddevice>=0.4.6
-soundfile>=0.12.1
-
 # Other utilities
 joblib>=1.3.0
-python-dotenv>=1.0.0
